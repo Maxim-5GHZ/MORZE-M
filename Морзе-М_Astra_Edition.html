@@ -1,2888 +1,2040 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М (ASTRA EDITION)</title>
-    <style>
-      :root {
-        --chassis-bg: #141812;
-        --panel-bg: #22291f;
-        --subpanel-bg: #192016;
-        --screen-bg: #0c110a;
-
-        --border-metal: #3d4a37;
-        --border-dark: #080c07;
-        --border-light: #4e5f47;
-
-        --mil-white: #e1e7de;
-        --mil-dim: #798772;
-        --mil-amber: #ffb000;
-        --mil-green: #33ff33;
-        --mil-red: #ff3b30;
-        --tape-paper: #0a0f08;
-        --tape-grid: #1a2617;
-        --tape-ink: #38ff38;
-
-        --btn-base: #2a3326;
-        --btn-border: #44543e;
-        --btn-hover: #374432;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        padding: 8px;
-        font-family: "Courier New", "Consolas", monospace;
-        background-color: var(--chassis-bg);
-        color: var(--mil-white);
-        user-select: none;
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        text-transform: uppercase;
-        overflow-x: hidden;
-      }
-
-      input, textarea {
-        user-select: text !important;
-        -moz-user-select: text !important;
-        -webkit-user-select: text !important;
-      }
-
-      button, select {
-        user-select: none !important;
-        -moz-user-select: none !important;
-        -webkit-user-select: none !important;
-      }
-
-      .container {
-        max-width: 1100px;
-        width: 100%;
-        margin: 0 auto;
-        background: var(--panel-bg);
-        border: 3px solid var(--border-dark);
-        box-shadow:
-          inset 1px 1px 0px var(--border-light),
-          inset -1px -1px 0px #0f140e,
-          0 12px 36px rgba(0, 0, 0, 0.9);
-        border-radius: 4px;
-        overflow: hidden;
-      }
-
-      header {
-        background: #11160f;
-        padding: 8px 12px;
-        border-bottom: 2px solid var(--border-dark);
-        display: -webkit-box;
-        display: -moz-box;
-        display: -ms-flexbox;
-        display: flex;
-        -webkit-box-pack: justify;
-        -moz-box-pack: justify;
-        justify-content: space-between;
-        -webkit-box-align: center;
-        -moz-box-align: center;
-        align-items: center;
-      }
-
-      .header-title {
-        display: -webkit-box;
-        display: -moz-box;
-        display: flex;
-        -webkit-box-align: center;
-        align-items: center;
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: 1px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .led {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-        flex-shrink: 0;
-        border-radius: 50%;
-        background: #151a13;
-        border: 1px solid #323e2d;
-        transition: background 0.03s;
-      }
-      .led.on {
-        background: var(--mil-red);
-        border-color: #ffa39e;
-        box-shadow: 0 0 12px var(--mil-red), inset 0 0 2px #fff;
-      }
-
-      #clock {
-        background: var(--screen-bg);
-        color: var(--mil-amber);
-        padding: 3px 6px;
-        border: 1px solid #2f3b2a;
-        font-size: 11px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        flex-shrink: 0;
-      }
-
-      /* ОНДУЛЯТОР */
-      .undulator-block {
-        background: #121810;
-        border-bottom: 2px solid var(--border-dark);
-        padding: 8px 12px 6px 12px;
-        box-shadow: inset 0 -2px 6px rgba(0, 0, 0, 0.5);
-      }
-
-      .undulator-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 5px;
-        font-size: 10px;
-        color: var(--mil-dim);
-        font-weight: bold;
-      }
-
-      .undulator-canvas-wrap {
-        position: relative;
-        background: var(--tape-paper);
-        border: 2px solid #283422;
-        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.95);
-        width: 100%;
-        height: 65px;
-      }
-
-      #undulatorCanvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-
-      .undulator-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 5px;
-        font-size: 9px;
-        color: var(--mil-dim);
-        flex-wrap: wrap;
-      }
-
-      .undulator-controls {
-        display: flex;
-        align-items: center;
-      }
-      .undulator-controls > * {
-        margin-right: 6px;
-      }
-
-      /* ВКЛАДКИ */
-      .tabs {
-        display: flex;
-        width: 100%;
-        background: #11160f;
-        border-bottom: 2px solid var(--border-dark);
-      }
-
-      .tab-btn {
-        flex: 1 1 0;
-        background: #192016;
-        border: 1px solid var(--border-dark);
-        border-top: none;
-        outline: none;
-        padding: 8px 4px;
-        color: var(--mil-dim);
-        font-family: inherit;
-        font-size: 10px;
-        font-weight: bold;
-        cursor: pointer;
-        border-right: 1px solid var(--border-dark);
-        letter-spacing: 0.5px;
-        text-align: center;
-        line-height: 1.25;
-      }
-
-      .tab-btn:hover {
-        background: var(--btn-hover);
-        color: var(--mil-white);
-      }
-
-      .tab-btn.active {
-        background: var(--panel-bg);
-        color: var(--mil-amber);
-        border-bottom: 2px solid var(--mil-amber);
-        box-shadow: inset 0 2px 0 var(--mil-amber);
-      }
-
-      .content-block {
-        display: none;
-        padding: 10px;
-      }
-      .content-block.active {
-        display: block;
-      }
-
-      .panel {
-        background: var(--subpanel-bg);
-        border: 2px solid var(--border-dark);
-        box-shadow: inset 1px 1px 0px var(--border-metal);
-        padding: 12px;
-        margin-bottom: 12px;
-      }
-
-      .panel-teacher {
-        background: #1e261a;
-        border-color: #35432f;
-      }
-
-      .panel h3 {
-        margin: 0 0 10px 0;
-        font-size: 11px;
-        color: var(--mil-amber);
-        letter-spacing: 1.5px;
-      }
-
-      .panel h3::before {
-        content: "■ ";
-        font-size: 8px;
-        color: var(--mil-dim);
-      }
-
-      .presets-row {
-        display: flex;
-        flex-wrap: wrap;
-        margin: 0 -3px 8px -3px;
-      }
-
-      .preset-badge {
-        background: var(--btn-base);
-        color: var(--mil-white);
-        border: 1px solid var(--btn-border);
-        padding: 4px 8px;
-        font-size: 10px;
-        font-weight: bold;
-        cursor: pointer;
-        margin: 3px;
-      }
-      .preset-badge:hover:not(.disabled) {
-        background: var(--btn-hover);
-        border-color: var(--mil-amber);
-        color: var(--mil-amber);
-      }
-      .preset-badge.disabled {
-        opacity: 0.35;
-        cursor: not-allowed;
-      }
-      .preset-badge.clear-btn {
-        border-color: #5a1e1b;
-        color: #ff7873;
-        margin-left: auto;
-      }
-
-      /* СЕТКИ СОВМЕСТИМЫЕ С FIREFOX 43-45 */
-      .inputs-2col {
-        display: flex;
-        margin: 0 -5px 8px -5px;
-      }
-      .inputs-2col > .form-group:first-child {
-        flex: 1.15;
-        margin: 0 5px;
-      }
-      .inputs-2col > .form-group:last-child {
-        flex: 0.85;
-        margin: 0 5px;
-      }
-
-      .controls-row-4 {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        margin: 0 -4px 10px -4px;
-      }
-      .controls-row-4 > .form-group {
-        margin: 4px;
-        box-sizing: border-box;
-      }
-      .controls-row-4 > .form-group:nth-child(1) { flex: 2 1 120px; } /* Размер группы */
-      .controls-row-4 > .form-group:nth-child(2) { flex: 1.8 1 110px; } /* Число групп */
-      .controls-row-4 > .form-group:nth-child(3) { flex: 2.2 1 140px; } /* Повторение групп */
-      .controls-row-4 > .btn-gen {
-        flex: 2 1 130px;
-        margin: 4px;
-        height: 30px;
-        box-sizing: border-box;
-      }
-
-      .grid-2 {
-        display: flex;
-        margin: 0 -6px;
-      }
-      .grid-2 > .panel {
-        flex: 1 1 0;
-        margin: 0 6px 12px 6px;
-        min-width: 0;
-      }
-
-      @media (max-width: 768px) {
-        .inputs-2col, .grid-2, .controls-row-4 {
-          display: block;
-          margin: 0 0 8px 0;
-        }
-        .inputs-2col > .form-group,
-        .grid-2 > .panel,
-        .controls-row-4 > .form-group,
-        .controls-row-4 > .btn-gen {
-          margin: 0 0 8px 0;
-          width: 100% !important;
-        }
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .form-group label {
-        font-size: 10px;
-        font-weight: bold;
-        color: var(--mil-dim);
-        letter-spacing: 0.5px;
-        margin-bottom: 4px;
-      }
-
-      input[type="text"],
-      input[type="number"],
-      select,
-      textarea {
-        background: var(--screen-bg);
-        border: 1px solid #33422d;
-        color: var(--mil-green);
-        padding: 5px 8px;
-        font-family: inherit;
-        font-size: 12px;
-        font-weight: bold;
-        outline: none;
-        width: 100%;
-        box-sizing: border-box;
-      }
-
-      select {
-        height: 30px;
-        cursor: pointer;
-      }
-
-      select option {
-        background: #141c11;
-        color: #38e038;
-      }
-
-      input:disabled,
-      select:disabled,
-      textarea:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-        background: #090d07;
-        border-color: #222c1e;
-      }
-
-      input[type="text"]:focus:not(:disabled),
-      input[type="number"]:focus:not(:disabled),
-      select:focus:not(:disabled),
-      textarea:focus:not(:disabled) {
-        border-color: var(--mil-amber);
-      }
-
-      .teacher-auto-expand {
-        color: var(--mil-amber) !important;
-        font-size: 13px !important;
-        letter-spacing: 2px;
-        min-height: 38px;
-        height: auto;
-        resize: none;
-        overflow-y: hidden;
-        line-height: 1.45;
-        word-break: break-word;
-        white-space: pre-wrap;
-      }
-
-      .error-banner {
-        display: none;
-        background: #270f0e;
-        border: 1px solid var(--mil-red);
-        color: #ff9691;
-        padding: 6px 10px;
-        font-size: 11px;
-        margin-bottom: 8px;
-        font-weight: bold;
-      }
-
-      .btn-gen {
-        background: #313d2d;
-        color: var(--mil-white);
-        border: 1px solid #4a5c44;
-        padding: 0 8px;
-        cursor: pointer;
-        font-family: inherit;
-        font-weight: bold;
-        font-size: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .btn-gen:hover:not(:disabled) {
-        background: #3f4e3a;
-        border-color: var(--mil-amber);
-      }
-      .btn-gen:disabled {
-        opacity: 0.35;
-        cursor: not-allowed;
-      }
-
-      /* СЕТКА ГРУПП */
-      .groups-grid {
-        display: flex;
-        flex-wrap: wrap;
-        max-height: 220px;
-        overflow-y: auto;
-        padding: 4px;
-        background: var(--screen-bg);
-        border: 1px solid #33422d;
-        margin: 0 -2px;
-      }
-
-      .group-cell {
-        flex: 0 0 calc(10% - 6px);
-        min-width: 90px;
-        margin: 3px;
-        background: #171f14;
-        border: 1px solid #2e3b28;
-        padding: 3px 2px;
-        text-align: center;
-        position: relative;
-        box-sizing: border-box;
-      }
-
-      @media (max-width: 900px) {
-        .group-cell { flex: 0 0 calc(20% - 6px); }
-      }
-      @media (max-width: 600px) {
-        .group-cell { flex: 0 0 calc(33.33% - 6px); }
-      }
-
-      .group-cell.locked {
-        background: #11170f;
-        border-color: #20291c;
-      }
-      .group-cell.cell-error {
-        border-color: var(--mil-red) !important;
-        background: #331312 !important;
-      }
-
-      .group-cell.active-group {
-        border-color: var(--mil-amber) !important;
-        background: #282414 !important;
-        box-shadow: 0 0 10px rgba(255, 176, 0, 0.45);
-      }
-      .group-cell.active-group .group-cell-idx {
-        color: var(--mil-amber);
-        font-weight: bold;
-      }
-
-      .group-cell-idx {
-        display: block;
-        font-size: 8px;
-        color: var(--mil-dim);
-        letter-spacing: 1px;
-        margin-bottom: 2px;
-      }
-
-      .group-cell input {
-        background: transparent;
-        border: none;
-        color: var(--mil-green);
-        font-size: 13px;
-        font-weight: bold;
-        letter-spacing: 2px;
-        text-align: center;
-        width: 100%;
-        padding: 2px 0;
-        display: block;
-      }
-
-      .group-chars-display {
-        display: none;
-        justify-content: center;
-        align-items: center;
-        height: 22px;
-        letter-spacing: 1px;
-        font-size: 13px;
-        font-weight: bold;
-      }
-
-      .char-slot {
-        display: inline-block;
-        min-width: 14px;
-        text-align: center;
-        line-height: 18px;
-        height: 18px;
-        margin: 0 1px;
-        border-radius: 2px;
-        color: var(--mil-green);
-        font-weight: bold;
-      }
-
-      .char-slot.active-char {
-        background: var(--mil-amber) !important;
-        color: #0c110a !important;
-        box-shadow: 0 0 8px var(--mil-amber), 0 0 2px #fff;
-        font-weight: 900;
-      }
-
-      .char-slot.past-char {
-        color: #4a6845;
-      }
-
-      .btn-hide-preview {
-        background: var(--btn-base);
-        border: 1px solid var(--btn-border);
-        color: var(--mil-dim);
-        padding: 3px 6px;
-        cursor: pointer;
-        font-size: 9px;
-        font-family: inherit;
-      }
-
-      /* СТИЛИЗАЦИЯ ПОЛЗУНКОВ ПОД FIREFOX 43-45 */
-      .slider-group {
-        margin-bottom: 9px;
-      }
-      .slider-label {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 10px;
-        color: var(--mil-dim);
-        margin-bottom: 3px;
-      }
-      .slider-label b {
-        color: var(--mil-amber);
-        font-size: 11px;
-      }
-
-      input[type="range"] {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        background: transparent;
-        width: 100%;
-        height: 20px;
-        margin: 0;
-        cursor: pointer;
-      }
-      input[type="range"]::-moz-range-track {
-        background: #11180f;
-        border: 1px solid #33422d;
-        height: 6px;
-        border-radius: 0;
-      }
-      input[type="range"]::-moz-range-thumb {
-        background: var(--mil-amber);
-        border: 1px solid #ffe082;
-        height: 16px;
-        width: 12px;
-        border-radius: 0;
-        cursor: pointer;
-        box-shadow: 0 0 4px rgba(255, 176, 0, 0.5);
-      }
-      input[type="range"]::-moz-range-progress {
-        background: #2e4527;
-        height: 6px;
-      }
-
-      input[type="range"]::-webkit-slider-runnable-track {
-        background: #11180f;
-        border: 1px solid #33422d;
-        height: 6px;
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        background: var(--mil-amber);
-        border: 1px solid #ffe082;
-        height: 16px;
-        width: 12px;
-        margin-top: -6px;
-        cursor: pointer;
-      }
-
-      .noise-box {
-        display: flex;
-        align-items: center;
-        background: #151c12;
-        border: 1px solid #303d2a;
-        padding: 7px 10px;
-        margin-bottom: 10px;
-        cursor: pointer;
-      }
-      .noise-box input[type="checkbox"] {
-        margin: 0 10px 0 0;
-        width: auto;
-      }
-
-      .action-btns {
-        display: flex;
-        height: 36px;
-        margin: 0 -4px;
-      }
-      .action-btn {
-        flex: 1;
-        margin: 0 4px;
-        font-family: inherit;
-        font-size: 11px;
-        font-weight: bold;
-        border: 1px solid transparent;
-        cursor: pointer;
-        letter-spacing: 1px;
-      }
-      .action-btn:disabled {
-        opacity: 0.25;
-        cursor: not-allowed;
-      }
-
-      .btn-start { background: #264a1e; border-color: #3f6f32; color: #fff; }
-      .btn-start:hover:not(:disabled) { background: #325f28; }
-      .btn-stop { background: #5a1e1c; border-color: #7b2926; color: #fff; }
-      .btn-stop:hover:not(:disabled) { background: #6e2523; }
-      .btn-check { background: #23374c; border-color: #385678; color: #fff; }
-      .btn-check:hover:not(:disabled) { background: #2c4763; }
-
-      textarea {
-        width: 100%;
-        height: 70px;
-        resize: vertical;
-        color: var(--mil-green);
-        font-size: 12px;
-        letter-spacing: 2px;
-        line-height: 1.4;
-      }
-
-      .rx-result {
-        background: var(--screen-bg);
-        border: 1px solid #303d2a;
-        padding: 8px;
-        font-size: 12px;
-        letter-spacing: 2px;
-        white-space: pre-wrap;
-        word-break: break-all;
-        line-height: 1.5;
-      }
-      .char-err { color: #fff; background: #621412; font-weight: bold; padding: 0 2px; }
-      .char-ok { color: var(--mil-green); }
-
-      /* МАНИПУЛЯТОРЫ */
-      .keyer-mode-toggle {
-        display: flex;
-        margin: 0 -3px 12px -3px;
-      }
-      .keyer-mode-btn {
-        flex: 1;
-        margin: 0 3px;
-        background: #192016;
-        border: 1px solid var(--border-dark);
-        color: var(--mil-dim);
-        padding: 8px 4px;
-        font-family: inherit;
-        font-size: 10px;
-        font-weight: bold;
-        cursor: pointer;
-        text-align: center;
-      }
-      .keyer-mode-btn.active {
-        background: #293623;
-        border-color: var(--mil-amber);
-        color: var(--mil-amber);
-        box-shadow: inset 0 0 6px rgba(255, 176, 0, 0.2);
-      }
-
-      .morse-key-single {
-        height: 86px;
-        background: #182014;
-        color: var(--mil-white);
-        font-size: 12px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid var(--border-dark);
-        box-shadow: inset 1px 1px 0px var(--border-metal), 0 3px 0px #080b06;
-        cursor: pointer;
-        letter-spacing: 1px;
-        text-align: center;
-        padding: 0 8px;
-      }
-      .morse-key-single:active,
-      .morse-key-single.pressed {
-        background: #202b1b;
-        color: var(--mil-amber);
-      }
-
-      .iambic-paddle-container {
-        display: flex;
-        height: 86px;
-        margin: 0 -4px;
-      }
-
-      .paddle-lever {
-        flex: 1;
-        margin: 0 4px;
-        background: #182014;
-        color: var(--mil-white);
-        border: 2px solid var(--border-dark);
-        box-shadow: inset 1px 1px 0px var(--border-metal), 0 3px 0px #080b06;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: bold;
-        letter-spacing: 1px;
-      }
-      .paddle-lever:active,
-      .paddle-lever.pressed {
-        background: #222e1b;
-        border-color: var(--mil-amber);
-        color: var(--mil-amber);
-      }
-
-      .mouse-pad-zone {
-        display: none;
-        position: relative;
-        background: #0f150d;
-        border: 2px dashed #3a4b33;
-        border-radius: 4px;
-        height: 86px;
-        cursor: crosshair;
-        overflow: hidden;
-      }
-      .mouse-pad-halves {
-        display: flex;
-        height: 100%;
-        width: 100%;
-      }
-      .mouse-half {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: bold;
-        color: var(--mil-dim);
-        pointer-events: none;
-      }
-      .mouse-half.pressed {
-        background: rgba(255, 176, 0, 0.2);
-        color: var(--mil-amber);
-      }
-      .mouse-pad-divider {
-        width: 2px;
-        background: #253320;
-      }
-
-      /* ТАБЛИЦА КОДОВ */
-      .table-grid {
-        display: flex;
-        flex-wrap: wrap;
-        max-height: 380px;
-        overflow-y: auto;
-        padding: 4px;
-        margin: -3px;
-        background: #141b12;
-      }
-
-      .table-grid.cards-locked .morse-card:not(.playing) {
-        opacity: 0.35;
-        cursor: not-allowed;
-      }
-
-      .morse-card {
-        position: relative;
-        flex: 0 0 calc(10% - 6px);
-        min-width: 85px;
-        margin: 3px;
-        background: var(--screen-bg);
-        border: 1px solid #2a3625;
-        padding: 6px 3px;
-        cursor: pointer;
-        text-align: center;
-        overflow: hidden;
-        box-sizing: border-box;
-      }
-
-      @media (max-width: 950px) {
-        .morse-card { flex: 0 0 calc(20% - 6px); }
-      }
-      @media (max-width: 600px) {
-        .morse-card { flex: 0 0 calc(33.33% - 6px); }
-      }
-
-      .morse-card:hover:not(.playing) {
-        border-color: var(--mil-amber);
-        background: #121810;
-      }
-
-      .morse-card.playing {
-        border-color: var(--mil-amber);
-        box-shadow: 0 0 10px rgba(255, 176, 0, 0.4);
-      }
-
-      .morse-card > *:not(.card-fill-gauge) {
-        position: relative;
-        z-index: 2;
-      }
-
-      .card-fill-gauge {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 0%;
-        background: rgba(255, 176, 0, 0.3);
-        border-right: 2px solid var(--mil-amber);
-        pointer-events: none;
-        z-index: 1;
-      }
-
-      .morse-card .sym {
-        font-size: 13px;
-        font-weight: bold;
-        color: var(--mil-white);
-      }
-      .morse-card .code {
-        color: var(--mil-green);
-        font-size: 11px;
-        margin: 2px 0;
-        font-family: monospace;
-      }
-      .morse-card .mnemonic {
-        color: var(--mil-dim);
-        font-size: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .live-morse-buffer {
-        font-size: 11px;
-        color: var(--mil-amber);
-        font-weight: bold;
-        min-height: 18px;
-        margin-top: 4px;
-        letter-spacing: 2px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <header>
-        <div class="header-title">
-          <span class="led" id="rxTxLed"></span>
-          <span>ИЗДЕЛИЕ «КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М» // Р-010-УМ // ASTRA EDITION</span>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М (ASTRA EDITION)</title>
+<style>
+:root{--chassis-bg:#141812;--panel-bg:#22291f;--subpanel-bg:#192016;--screen-bg:#0c110a;--border-metal:#3d4a37;--border-dark:#080c07;--border-light:#4e5f47;--mil-white:#e1e7de;--mil-dim:#798772;--mil-amber:#ffb000;--mil-green:#33ff33;--mil-red:#ff3b30;--tape-paper:#0a0f08;--btn-base:#2a3326;--btn-border:#44543e;--btn-hover:#374432}
+*{box-sizing:border-box}
+body{margin:0;padding:8px;font-family:"Courier New","Consolas",monospace;background:var(--chassis-bg);color:var(--mil-white);user-select:none;-moz-user-select:none;-webkit-user-select:none;text-transform:uppercase;overflow-x:hidden}
+input,textarea{user-select:text!important;-moz-user-select:text!important;-webkit-user-select:text!important}
+button,select{user-select:none!important;-moz-user-select:none!important;-webkit-user-select:none!important}
+.container{max-width:1100px;width:100%;margin:0 auto;background:var(--panel-bg);border:3px solid var(--border-dark);box-shadow:inset 1px 1px 0px var(--border-light),inset -1px -1px 0px #0f140e,0 12px 36px rgba(0,0,0,0.9);border-radius:4px;overflow:hidden}
+header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-dark);display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:justify;-webkit-box-pack:justify;justify-content:space-between;-moz-box-align:center;-webkit-box-align:center;align-items:center}
+.header-title{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center;font-size:11px;font-weight:900;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.led{display:inline-block;width:12px;height:12px;margin-right:8px;flex-shrink:0;border-radius:50%;background:#151a13;border:1px solid #323e2d}
+.led.on{background:var(--mil-red);border-color:#ffa39e;box-shadow:0 0 12px var(--mil-red),inset 0 0 2px #fff}
+#clock{background:var(--screen-bg);color:var(--mil-amber);padding:3px 6px;border:1px solid #2f3b2a;font-size:11px;font-weight:bold;letter-spacing:1px}
+.undulator-block{background:#121810;border-bottom:2px solid var(--border-dark);padding:8px 12px 6px 12px}
+.undulator-header{display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:justify;-webkit-box-pack:justify;justify-content:space-between;margin-bottom:5px;font-size:10px;color:var(--mil-dim);font-weight:bold}
+.undulator-canvas-wrap{position:relative;background:var(--tape-paper);border:2px solid #283422;width:100%;height:65px}
+#undulatorCanvas{width:100%;height:100%;display:block}
+.undulator-footer{display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:justify;-webkit-box-pack:justify;justify-content:space-between;-moz-box-align:center;-webkit-box-align:center;align-items:center;margin-top:5px;font-size:9px;color:var(--mil-dim);flex-wrap:wrap}
+.undulator-controls{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center}
+.undulator-controls>*{margin-right:6px}
+.tabs{display:-moz-box;display:-webkit-box;display:flex;width:100%;background:#11160f;border-bottom:2px solid var(--border-dark)}
+.tab-btn{-moz-box-flex:1;-webkit-box-flex:1;flex:1;background:#192016;border:1px solid var(--border-dark);border-top:none;outline:none;padding:8px 4px;color:var(--mil-dim);font-family:inherit;font-size:10px;font-weight:bold;cursor:pointer;border-right:1px solid var(--border-dark);text-align:center}
+.tab-btn:hover{background:var(--btn-hover);color:var(--mil-white)}
+.tab-btn.active{background:var(--panel-bg);color:var(--mil-amber);border-bottom:2px solid var(--mil-amber)}
+.content-block{display:none;padding:10px}
+.content-block.active{display:block}
+.panel{background:var(--subpanel-bg);border:2px solid var(--border-dark);padding:12px;margin-bottom:12px}
+.panel-teacher{background:#1e261a;border-color:#35432f}
+.panel h3{margin:0 0 10px 0;font-size:11px;color:var(--mil-amber);letter-spacing:1.5px}
+.presets-row{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;margin:0 -3px 8px -3px}
+.preset-badge{background:var(--btn-base);color:var(--mil-white);border:1px solid var(--btn-border);padding:4px 8px;font-size:10px;font-weight:bold;cursor:pointer;margin:3px}
+.preset-badge:hover:not(.disabled){background:var(--btn-hover);border-color:var(--mil-amber);color:var(--mil-amber)}
+.preset-badge.disabled{opacity:0.35;cursor:not-allowed}
+.preset-badge.clear-btn{border-color:#5a1e1b;color:#ff7873;margin-left:auto}
+.inputs-2col{display:-moz-box;display:-webkit-box;display:flex;margin:0 -5px 8px -5px}
+.inputs-2col>.form-group:first-child{-moz-box-flex:1.15;flex:1.15;margin:0 5px}
+.inputs-2col>.form-group:last-child{-moz-box-flex:0.85;flex:0.85;margin:0 5px}
+.controls-row-5{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;-moz-box-align:end;align-items:flex-end;margin:0 -4px 10px -4px}
+.controls-row-5>.form-group{margin:4px;box-sizing:border-box}
+.controls-row-5>.form-group:nth-child(1){flex:1.6 1 110px}
+.controls-row-5>.form-group:nth-child(2){flex:1.4 1 95px}
+.controls-row-5>.form-group:nth-child(3){flex:1.8 1 120px}
+.controls-row-5>.form-group:nth-child(4){flex:2.4 1 160px}
+.controls-row-5>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
+.grid-2{display:-moz-box;display:-webkit-box;display:flex;margin:0 -6px}
+.grid-2>.panel{-moz-box-flex:1;flex:1 1 0;margin:0 6px 12px 6px;min-width:0}
+@media(max-width:768px){.inputs-2col,.grid-2,.controls-row-5{display:block;margin:0 0 8px 0}.inputs-2col>.form-group,.grid-2>.panel,.controls-row-5>.form-group,.controls-row-5>.btn-gen{margin:0 0 8px 0;width:100%!important}}
+.form-group{display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column}
+.form-group label{font-size:10px;font-weight:bold;color:var(--mil-dim);margin-bottom:4px}
+input[type="text"],input[type="number"],select,textarea{background:var(--screen-bg);border:1px solid #33422d;color:var(--mil-green);padding:5px 8px;font-family:inherit;font-size:12px;font-weight:bold;outline:none;width:100%}
+select{height:30px;cursor:pointer}
+select option{background:#141c11;color:#38e038}
+input:disabled,select:disabled,textarea:disabled{opacity:0.45;cursor:not-allowed;background:#090d07}
+input:focus:not(:disabled),select:focus:not(:disabled),textarea:focus:not(:disabled){border-color:var(--mil-amber)}
+.teacher-auto-expand{color:var(--mil-amber)!important;font-size:13px!important;letter-spacing:2px;min-height:38px;height:auto;resize:none;overflow-y:hidden;line-height:1.45;word-break:break-word;white-space:pre-wrap}
+.error-banner{display:none;background:#270f0e;border:1px solid var(--mil-red);color:#ff9691;padding:6px 10px;font-size:11px;margin-bottom:8px;font-weight:bold}
+.btn-gen{background:#313d2d;color:var(--mil-white);border:1px solid #4a5c44;padding:0 8px;cursor:pointer;font-family:inherit;font-weight:bold;font-size:10px;display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;-moz-box-pack:center;justify-content:center}
+.btn-gen:hover:not(:disabled){background:#3f4e3a;border-color:var(--mil-amber)}
+.btn-gen:disabled{opacity:0.35;cursor:not-allowed}
+.groups-header-bar{display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:justify;justify-content:space-between;-moz-box-align:center;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.groups-header-left{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;flex-wrap:wrap;margin-right:6px}
+.mono-insert-bar{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;background:#141b12;border:1px solid #33422d;padding:2px 6px;margin-left:8px}
+.mono-insert-bar label{font-size:9px;color:var(--mil-dim);font-weight:bold;margin-right:6px}
+.mono-char-input{width:32px!important;height:24px;text-align:center;font-size:12px;padding:0!important;margin-right:6px;color:var(--mil-amber)!important}
+.mono-count-select{height:24px!important;width:auto!important;padding:1px 4px!important;font-size:9px!important;margin-right:6px}
+.btn-mono-insert{height:24px;background:#2b3927;color:var(--mil-amber);border:1px solid #42573c;font-family:inherit;font-size:9px;font-weight:bold;padding:0 8px;cursor:pointer}
+.btn-mono-insert:hover:not(:disabled){background:#394d33;border-color:var(--mil-amber)}
+.groups-grid{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;max-height:220px;overflow-y:auto;padding:4px;background:var(--screen-bg);border:1px solid #33422d;margin:0 -2px}
+.group-cell{flex:0 0 calc(10% - 6px);min-width:90px;margin:3px;background:#171f14;border:1px solid #2e3b28;padding:3px 2px;text-align:center;position:relative}
+@media(max-width:900px){.group-cell{flex:0 0 calc(20% - 6px)}}
+@media(max-width:600px){.group-cell{flex:0 0 calc(33.33% - 6px)}}
+.group-cell.locked{background:#11170f;border-color:#20291c}
+.group-cell.cell-error{border-color:var(--mil-red)!important;background:#331312!important}
+.group-cell.active-group{border-color:var(--mil-amber)!important;background:#282414!important}
+.group-cell.active-group .group-cell-idx{color:var(--mil-amber);font-weight:bold}
+.group-cell-idx{display:block;font-size:8px;color:var(--mil-dim);margin-bottom:2px}
+.group-cell input{background:transparent;border:none;color:var(--mil-green);font-size:13px;font-weight:bold;letter-spacing:2px;text-align:center;width:100%;padding:2px 0;display:block}
+.group-cell-add{display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-align:center;align-items:center;-moz-box-pack:center;justify-content:center;background:#11180f;border:1px dashed #3a4b34;cursor:pointer;min-height:48px}
+.group-cell-add:hover{background:#1d2919;border-color:var(--mil-amber);color:var(--mil-amber)}
+.group-cell-add .add-icon{font-size:15px;font-weight:bold;color:var(--mil-amber);line-height:1}
+.group-cell-add .add-text{font-size:8px;color:var(--mil-dim);margin-top:2px}
+.group-chars-display{display:none;-moz-box-pack:center;justify-content:center;-moz-box-align:center;align-items:center;height:22px;letter-spacing:1px;font-size:13px;font-weight:bold}
+.char-slot{display:inline-block;min-width:14px;text-align:center;line-height:18px;height:18px;margin:0 1px;border-radius:2px;color:var(--mil-green);font-weight:bold}
+.char-slot.active-char{background:var(--mil-amber)!important;color:#0c110a!important;box-shadow:0 0 8px var(--mil-amber);font-weight:900}
+.char-slot.past-char{color:#4a6845}
+.btn-hide-preview{background:var(--btn-base);border:1px solid var(--btn-border);color:var(--mil-dim);padding:3px 6px;cursor:pointer;font-size:9px;font-family:inherit;height:24px}
+.slider-group{margin-bottom:9px}
+.slider-label{display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:justify;justify-content:space-between;-moz-box-align:center;align-items:center;font-size:10px;color:var(--mil-dim);margin-bottom:3px}
+.slider-label b{color:var(--mil-amber);font-size:11px}
+input[type="range"]{-moz-appearance:none;background:transparent;width:100%;height:20px;margin:0;cursor:pointer}
+input[type="range"]::-moz-range-track{background:#11180f;border:1px solid #33422d;height:6px}
+input[type="range"]::-moz-range-thumb{background:var(--mil-amber);border:1px solid #ffe082;height:16px;width:12px;border-radius:0;cursor:pointer}
+input[type="range"]::-moz-range-progress{background:#2e4527;height:6px}
+.noise-box{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;background:#151c12;border:1px solid #303d2a;padding:7px 10px;margin-bottom:10px;cursor:pointer}
+.noise-box input[type="checkbox"]{margin:0 10px 0 0;width:auto}
+.action-btns{display:-moz-box;display:-webkit-box;display:flex;height:36px;margin:0 -4px}
+.action-btn{-moz-box-flex:1;flex:1;margin:0 4px;font-family:inherit;font-size:11px;font-weight:bold;border:1px solid transparent;cursor:pointer}
+.action-btn:disabled{opacity:0.25;cursor:not-allowed}
+.btn-start{background:#264a1e;border-color:#3f6f32;color:#fff}
+.btn-start:hover:not(:disabled){background:#325f28}
+.btn-stop{background:#5a1e1c;border-color:#7b2926;color:#fff}
+.btn-stop:hover:not(:disabled){background:#6e2523}
+.btn-check{background:#23374c;border-color:#385678;color:#fff}
+.btn-check:hover:not(:disabled){background:#2c4763}
+textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size:12px;letter-spacing:2px}
+.rx-result{background:var(--screen-bg);border:1px solid #303d2a;padding:8px;font-size:12px;letter-spacing:2px;white-space:pre-wrap;word-break:break-all}
+.char-err{color:#fff;background:#621412;font-weight:bold;padding:0 2px}
+.char-ok{color:var(--mil-green)}
+.keyer-mode-toggle{display:-moz-box;display:-webkit-box;display:flex;margin:0 -3px 12px -3px}
+.keyer-mode-btn{-moz-box-flex:1;flex:1;margin:0 3px;background:#192016;border:1px solid var(--border-dark);color:var(--mil-dim);padding:8px 4px;font-family:inherit;font-size:10px;font-weight:bold;cursor:pointer;text-align:center}
+.keyer-mode-btn.active{background:#293623;border-color:var(--mil-amber);color:var(--mil-amber)}
+.morse-key-single{height:86px;background:#182014;color:var(--mil-white);font-size:12px;font-weight:bold;display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;-moz-box-pack:center;justify-content:center;border:2px solid var(--border-dark);cursor:pointer;text-align:center}
+.morse-key-single:active,.morse-key-single.pressed{background:#202b1b;color:var(--mil-amber)}
+.iambic-paddle-container{display:-moz-box;display:-webkit-box;display:flex;height:86px;margin:0 -4px}
+.paddle-lever{-moz-box-flex:1;flex:1;margin:0 4px;background:#182014;color:var(--mil-white);border:2px solid var(--border-dark);cursor:pointer;display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-align:center;align-items:center;-moz-box-pack:center;justify-content:center;font-size:11px;font-weight:bold}
+.paddle-lever:active,.paddle-lever.pressed{background:#222e1b;border-color:var(--mil-amber);color:var(--mil-amber)}
+.mouse-pad-zone{display:none;position:relative;background:#0f150d;border:2px dashed #3a4b33;height:86px;cursor:crosshair}
+.mouse-pad-halves{display:-moz-box;display:-webkit-box;display:flex;height:100%;width:100%}
+.mouse-half{-moz-box-flex:1;flex:1;display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-align:center;align-items:center;-moz-box-pack:center;justify-content:center;font-size:10px;font-weight:bold;color:var(--mil-dim);pointer-events:none}
+.mouse-half.pressed{background:rgba(255,176,0,0.2);color:var(--mil-amber)}
+.mouse-pad-divider{width:2px;background:#253320}
+.table-grid{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;max-height:380px;overflow-y:auto;padding:4px;margin:-3px;background:#141b12}
+.table-grid.cards-locked .morse-card:not(.playing){opacity:0.35;cursor:not-allowed}
+.morse-card{position:relative;flex:0 0 calc(10% - 6px);min-width:85px;margin:3px;background:var(--screen-bg);border:1px solid #2a3625;padding:6px 3px;cursor:pointer;text-align:center;overflow:hidden}
+@media(max-width:950px){.morse-card{flex:0 0 calc(20% - 6px)}}
+@media(max-width:600px){.morse-card{flex:0 0 calc(33.33% - 6px)}}
+.morse-card:hover:not(.playing){border-color:var(--mil-amber);background:#121810}
+.morse-card.playing{border-color:var(--mil-amber)}
+.morse-card>*:not(.card-fill-gauge){position:relative;z-index:2}
+.card-fill-gauge{position:absolute;left:0;top:0;bottom:0;width:0%;background:rgba(255,176,0,0.3);border-right:2px solid var(--mil-amber);pointer-events:none;z-index:1}
+.morse-card .sym{font-size:13px;font-weight:bold;color:var(--mil-white)}
+.morse-card .code{color:var(--mil-green);font-size:11px;margin:2px 0}
+.morse-card .mnemonic{color:var(--mil-dim);font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live-morse-buffer{font-size:11px;color:var(--mil-amber);font-weight:bold;min-height:18px;margin-top:4px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="header-title"><span class="led" id="rxTxLed"></span><span>ИЗДЕЛИЕ «КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М» // Р-010-УМ // ASTRA EDITION</span></div>
+    <div id="clock">00:00:00</div>
+  </header>
+  <div class="undulator-block">
+    <div class="undulator-header"><span>■ САМОПИСЕЦ ЛЕНТЫ // РЕАЛЬНОЕ ВРЕМЯ</span><span id="lblTapeStatus" style="color:var(--mil-amber)">ЛЕНТА АКТИВНА</span></div>
+    <div class="undulator-canvas-wrap"><canvas id="undulatorCanvas"></canvas></div>
+    <div class="undulator-footer">
+      <div class="undulator-controls">
+        <span>ПРОТЯЖКА:</span>
+        <input type="range" id="rngTapeSpeed" min="40" max="260" value="120" style="width:80px"/>
+        <b id="lblTapeSpeed" style="color:var(--mil-amber);min-width:55px">120 px/s</b>
+        <span style="margin-left:10px">КАНАЛ:</span>
+        <select id="selTapeSource" style="padding:1px 4px;font-size:9px;height:24px;width:auto">
+          <option value="ALL" selected>СКВОЗНОЙ (TX + RX)</option>
+          <option value="TX_ONLY">ТОЛЬКО КЛЮЧ (TX)</option>
+          <option value="RX_ONLY">ТОЛЬКО ЭФИР (RX)</option>
+        </select>
+      </div>
+      <div><button class="btn-hide-preview" onclick="clearTape()">Очистить ленту</button></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-rx', this)">1. Приём на слух</button>
+    <button class="tab-btn" onclick="switchTab('tab-tx', this)">2. Работа на ключе</button>
+    <button class="tab-btn" onclick="switchTab('tab-study', this)">3. Таблица кодов</button>
+    <button class="tab-btn" onclick="switchTab('tab-settings', this)">4. Тракт ПЧ/НЧ, QSB и Фронты</button>
+  </div>
+  <div id="tab-rx" class="content-block active">
+    <div class="panel panel-teacher">
+      <h3>Блок формирования учебных радиограмм</h3>
+      <div class="presets-row" id="presetsBlock">
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')">★ Полный алфавит</span>
+        <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')">Базовые буквы</span>
+        <span class="preset-badge" onclick="setPreset('0 Ø 1 2 3 4 5 6 7 8 9')">Цифровой блок</span>
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 Ø 1 2 3 4 5 6 7 8 9')">Буквы и цифры</span>
+        <span class="preset-badge" onclick="setPreset('= / ? , .')">Спецзнаки и препинание</span>
+        <span class="preset-badge clear-btn" onclick="clearAllTrainer()">✖ Сброс бланка</span>
+      </div>
+      <div class="inputs-2col">
+        <div class="form-group">
+          <label>Набор знаков (через пробел; короткий ноль: [0]+[-]):</label>
+          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this); uiGenerateGroupsTable();">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
         </div>
-        <div id="clock">00:00:00</div>
-      </header>
-
-      <!-- ОНДУЛЯТОР -->
-      <div class="undulator-block">
-        <div class="undulator-header">
-          <span>■ САМОПИСЕЦ ЛЕНТЫ (ОНДУЛЯТОР СВЯЗИ) // РЕАЛЬНОЕ ВРЕМЯ</span>
-          <span id="lblTapeStatus" style="color: var(--mil-amber)">ЛЕНТА АКТИВНА</span>
-        </div>
-        <div class="undulator-canvas-wrap">
-          <canvas id="undulatorCanvas"></canvas>
-        </div>
-        <div class="undulator-footer">
-          <div class="undulator-controls">
-            <span>ПРОТЯЖКА:</span>
-            <input type="range" id="rngTapeSpeed" min="40" max="260" value="120" style="width: 80px" />
-            <b id="lblTapeSpeed" style="color: var(--mil-amber); min-width: 55px">120 px/s</b>
-
-            <span style="margin-left: 10px">КАНАЛ:</span>
-            <select id="selTapeSource" style="padding: 1px 4px; font-size: 9px; height: 24px; width: auto;">
-              <option value="ALL" selected>СКВОЗНОЙ (TX + RX)</option>
-              <option value="TX_ONLY">ТОЛЬКО КЛЮЧ (TX)</option>
-              <option value="RX_ONLY">ТОЛЬКО ЭФИР (RX)</option>
-            </select>
-          </div>
-          <div>
-            <button class="btn-hide-preview" onclick="clearTape()">Очистить ленту</button>
-          </div>
+        <div class="form-group">
+          <label>Знаки приоритетной отработки:</label>
+          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this); uiGenerateGroupsTable();"></textarea>
         </div>
       </div>
-
-      <!-- ВКЛАДКИ РЕЖИМОВ -->
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('tab-rx', this)">1. Приём на слух</button>
-        <button class="tab-btn" onclick="switchTab('tab-tx', this)">2. Работа на ключе</button>
-        <button class="tab-btn" onclick="switchTab('tab-study', this)">3. Таблица кодов</button>
-        <button class="tab-btn" onclick="switchTab('tab-settings', this)">4. Тракт ПЧ/НЧ, QSB и Фронты</button>
+      <div class="error-banner" id="teacherErrorBox"></div>
+      <div class="controls-row-5">
+        <div class="form-group">
+          <label>Размер группы:</label>
+          <select id="groupLength" onchange="uiGenerateGroupsTable()">
+            <option value="2">2 знака</option>
+            <option value="3">3 знака</option>
+            <option value="4">4 знака</option>
+            <option value="5" selected>5 знаков</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Число групп (0..100):</label>
+          <input type="number" id="numGroups" min="0" max="100" value="12" oninput="uiGenerateGroupsTable()" onchange="uiGenerateGroupsTable()"/>
+        </div>
+        <div class="form-group">
+          <label>Повторение групп:</label>
+          <select id="groupRepeat">
+            <option value="1">1 раз (Зачёт)</option>
+            <option value="2">2 раза (Обучение)</option>
+            <option value="3">3 раза (Начальный)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Вступление (зачин):</label>
+          <select id="selPreambleMode">
+            <option value="NONE">Без вступления</option>
+            <option value="SINGLE_V" selected>Просто Ж (...-)</option>
+            <option value="SERIES_VVV">Серия Ж Ж Ж (...-  ...-  ...-)</option>
+            <option value="HST_VTO">Норматив СРТ: ЖТО (...-  -  ---)</option>
+            <option value="CALL_VVV_EQ">Циркулярное: VVV = (...- ...- ...-  -...-)</option>
+          </select>
+        </div>
+        <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()"><span>⟳ </span> Сформировать</button>
       </div>
-
-      <!-- 1. ПРИЁМ РАДИОГРАММ -->
-      <div id="tab-rx" class="content-block active">
-        <div class="panel panel-teacher">
-          <h3>Блок формирования учебных радиограмм</h3>
-
-          <div class="presets-row" id="presetsBlock">
-            <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')">★ Полный алфавит</span>
-            <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')">Базовые буквы</span>
-            <span class="preset-badge" onclick="setPreset('0 1 2 3 4 5 6 7 8 9')">Цифровой блок</span>
-            <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 1 2 3 4 5 6 7 8 9')">Буквы и цифры</span>
-            <span class="preset-badge" onclick="setPreset('= / ? , .')">Спецзнаки и препинание</span>
-            <span class="preset-badge clear-btn" onclick="clearAllTrainer()">✖ Сброс бланка</span>
-          </div>
-
-          <div class="inputs-2col">
-            <div class="form-group">
-              <label>Набор знаков (через пробел):</label>
-              <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this); uiGenerateGroupsTable();">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
-            </div>
-            <div class="form-group">
-              <label>Знаки приоритетной отработки (повышенный вес):</label>
-              <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this); uiGenerateGroupsTable();"></textarea>
-            </div>
-          </div>
-
-          <div class="error-banner" id="teacherErrorBox"></div>
-
-          <div class="controls-row-4">
-            <div class="form-group">
-              <label>Размер группы:</label>
-              <select id="groupLength" onchange="uiGenerateGroupsTable()">
-                <option value="2">2 знака</option>
-                <option value="3">3 знака</option>
-                <option value="4">4 знака</option>
-                <option value="5" selected>5 знаков (Норматив)</option>
+      <div>
+        <div class="groups-header-bar">
+          <div class="groups-header-left">
+            <span style="font-size:10px;color:var(--mil-dim);font-weight:bold">Бланк радиограммы:</span>
+            <div class="mono-insert-bar" id="monoInsertBar">
+              <label>МОНО-ГРУППА:</label>
+              <input type="text" id="monoCharInput" class="mono-char-input" maxlength="1" placeholder="Ж" onkeydown="if((event.keyCode||event.which)===13){insertMonoGroupFromPanel();if(event.preventDefault)event.preventDefault();}"/>
+              <select id="monoCharCount" class="mono-count-select">
+                <option value="1">1 гр.</option>
+                <option value="2">2 гр.</option>
+                <option value="3" selected>3 гр.</option>
+                <option value="5">5 гр.</option>
+                <option value="10">10 гр.</option>
               </select>
+              <button type="button" class="btn-mono-insert" id="btnInsertMono" onclick="insertMonoGroupFromPanel()">+ Вставить</button>
             </div>
-            <div class="form-group">
-              <label>Число групп (0..100):</label>
-              <input type="number" id="numGroups" min="0" max="100" value="12" oninput="uiGenerateGroupsTable()" onchange="uiGenerateGroupsTable()" />
-            </div>
-            <div class="form-group">
-              <label>Повторение групп:</label>
-              <select id="groupRepeat">
-                <option value="1">1 раз (Зачёт)</option>
-                <option value="2">2 раза (Обучение)</option>
-                <option value="3">3 раза (Начальный)</option>
-              </select>
-            </div>
-            <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()">
-              <span>⟳ </span> Сформировать
-            </button>
           </div>
-
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-              <span style="font-size: 10px; color: var(--mil-dim); font-weight: bold;">Контрольная радиограмма:</span>
-              <button class="btn-hide-preview" onclick="toggleHideGroups()">
-                <span id="lblHideGroups">Скрыть от оператора</span>
-              </button>
-            </div>
-            <div class="groups-grid" id="groupsContainer"></div>
-          </div>
+          <div><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
         </div>
-
-        <div class="grid-2">
-          <div class="panel">
-            <h3>Скоростные нормативы (меняются на лету)</h3>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Скорость посылки (напев):</span>
-                <b id="lblCharSpeed">70 зн/мин</b>
-              </div>
-              <input type="range" id="rngCharSpeed" min="30" max="200" value="70" />
-            </div>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Интервал между знаками (Фарнсворт):</span>
-                <b id="lblFarnSpeed">50 зн/мин</b>
-              </div>
-              <input type="range" id="rngFarnSpeed" min="20" max="70" value="50" />
-            </div>
-            <div class="slider-group" style="margin-bottom: 0">
-              <div class="slider-label">
-                <span>Пауза между группами:</span>
-                <b id="lblGroupPause">x1.0 (стандарт)</b>
-              </div>
-              <input type="range" id="rngGroupPause" min="10" max="50" value="10" />
-            </div>
-          </div>
-
-          <div class="panel" style="display: flex; flex-direction: column; justify-content: space-between;">
-            <h3>Управление приёмным трактом</h3>
-
-            <div class="noise-box" onclick="toggleNoiseViaBox()">
-              <input type="checkbox" id="chkQuickNoise" onclick="event.stopPropagation(); toggleNoiseFromMain(this.checked);" />
-              <label for="chkQuickNoise" style="cursor: pointer; font-size: 11px;">Имитация помех (QRM/QRN) и замираний (QSB)</label>
-            </div>
-
-            <div class="action-btns">
-              <button class="action-btn btn-start" id="btnRxStart">ПУСК ПРИЁМА</button>
-              <button class="action-btn btn-stop" id="btnRxStop" disabled>СТОП</button>
-              <button class="action-btn btn-check" id="btnRxCheck">КОНТРОЛЬ</button>
-            </div>
-          </div>
+        <div class="groups-grid" id="groupsContainer"></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Скоростные нормативы</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Скорость посылки:</span><b id="lblCharSpeed">70 зн/мин</b></div>
+          <input type="range" id="rngCharSpeed" min="30" max="200" value="70"/>
         </div>
-
-        <div class="panel" style="margin-bottom: 0">
-          <h3>Журнал оператора (принятый текст):</h3>
-          <textarea id="txtUserInput" placeholder="Ввод принятых групп через пробел..."></textarea>
-
-          <div style="margin-top: 8px">
-            <div class="rx-result" id="diffBox" style="display: none"></div>
-            <div id="examReport" style="margin-top: 6px; font-weight: bold; color: var(--mil-amber); font-size: 11px;"></div>
-          </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Интервал (Фарнсворт):</span><b id="lblFarnSpeed">50 зн/мин</b></div>
+          <input type="range" id="rngFarnSpeed" min="20" max="70" value="50"/>
+        </div>
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label"><span>Пауза между группами:</span><b id="lblGroupPause">x1.0 (стандарт)</b></div>
+          <input type="range" id="rngGroupPause" min="10" max="50" value="10"/>
         </div>
       </div>
-
-      <!-- 2. ПЕРЕДАЧА НА КЛЮЧЕ -->
-      <div id="tab-tx" class="content-block">
-        <div class="grid-2">
-          <div class="panel">
-            <h3>Конфигурация передающего манипулятора</h3>
-
-            <div class="keyer-mode-toggle">
-              <button class="keyer-mode-btn active" id="btnModeStraight" onclick="setKeyerMode('straight')">ВЕРТИКАЛЬНЫЙ (РУЧНОЙ)</button>
-              <button class="keyer-mode-btn" id="btnModeIambic" onclick="setKeyerMode('iambic')">ЭЛЕКТРОННЫЙ (IAMBIC)</button>
-            </div>
-
-            <!-- Вертикальный ключ -->
-            <div id="straightKeyParams">
-              <div class="slider-group">
-                <div class="slider-label">
-                  <span>Определяемый темп руки (АРУ):</span>
-                  <b id="lblTxDetected">70 зн/мин [ПОИСК]</b>
-                </div>
-                <div style="font-size: 9px; color: var(--mil-dim); margin-top: 3px">
-                  Динамический адаптивный фильтр темпа (EMA α=0.28). Порог: 1.85 × τ.
-                </div>
-              </div>
-            </div>
-
-            <!-- Электронный ключ -->
-            <div id="iambicKeyParams" style="display: none">
-              <div class="slider-group">
-                <div class="slider-label">
-                  <span>Скорость автомата передачи:</span>
-                  <b id="lblIambicSpeed">70 зн/мин</b>
-                </div>
-                <input type="range" id="rngIambicSpeed" min="30" max="220" value="70" />
-              </div>
-
-              <div class="form-group" style="margin-bottom: 8px">
-                <label>Орган управления манипулятором:</label>
-                <select id="selIambicInputSource" onchange="switchIambicInputSource(this.value)">
-                  <option value="KEYS" selected>КЛАВИАТУРА [ Z / X ] или [ Я / Ч ]</option>
-                  <option value="MOUSE">МЫШЬ (ЛКМ - ТОЧКА, ПКМ - ТИРЕ)</option>
-                </select>
-              </div>
-
-              <div style="font-size: 9px; color: var(--mil-dim); margin-bottom: 8px">
-                Автоматическое сжатие Iambic-B: при зажиме двух сторон выдаётся «.-.-»
-              </div>
-            </div>
-
-            <div style="margin: 12px 0">
-              <div class="morse-key-single" id="virtualKey">МАНИПУЛЯТОР (КЛАВИША ПРОБЕЛ)</div>
-
-              <div class="iambic-paddle-container" id="virtualPaddle" style="display: none">
-                <div class="paddle-lever" id="paddleLeft">
-                  <span>● ТОЧКА (DIT)</span>
-                  <span style="font-size: 8px; color: var(--mil-dim)">[ Z ] или [ Я ]</span>
-                </div>
-                <div class="paddle-lever" id="paddleRight">
-                  <span>▬ ТИРЕ (DAH)</span>
-                  <span style="font-size: 8px; color: var(--mil-dim)">[ X ] или [ Ч ]</span>
-                </div>
-              </div>
-
-              <div class="mouse-pad-zone" id="mousePadZone">
-                <div class="mouse-pad-halves">
-                  <div class="mouse-half" id="padHalfLeft">
-                    <span>● ЛКМ: ТОЧКА</span>
-                    <span style="font-size: 8px">УДЕРЖАНИЕ ДЛЯ СЕРИИ</span>
-                  </div>
-                  <div class="mouse-pad-divider"></div>
-                  <div class="mouse-half" id="padHalfRight">
-                    <span>▬ ПКМ: ТИРЕ</span>
-                    <span style="font-size: 8px">ОБА КЛИКА: СЖАТИЕ</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="live-morse-buffer" id="lblLiveMorseBuffer">БУФЕР СИМВОЛА: [ ГОТОВ ]</div>
-
-            <button class="action-btn btn-stop" style="width: 100%; height: 32px; margin-top: 8px;" onclick="clearTx()">Очистить регистр</button>
-          </div>
-
-          <div class="panel">
-            <h3>Регистр декодированных сигналов:</h3>
-            <div class="rx-result" id="txDecoded" style="height: 145px; overflow-y: auto"></div>
-            <div style="margin-top: 8px; font-size: 10px; color: var(--mil-dim)">
-              Устранение дребезга контактов &lt; 25 мс активно. Автодекодирование пауз.
-            </div>
-          </div>
+      <div class="panel" style="display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-pack:justify;justify-content:space-between">
+        <h3>Управление приёмным трактом</h3>
+        <div class="noise-box" onclick="toggleNoiseViaBox()">
+          <input type="checkbox" id="chkQuickNoise" onclick="event.stopPropagation(); toggleNoiseFromMain(this.checked);"/>
+          <label for="chkQuickNoise" style="cursor:pointer;font-size:11px">Имитация помех (QRM/QRN) и замираний (QSB)</label>
         </div>
-      </div>
-
-      <!-- 3. КОДОВАЯ ТАБЛИЦА -->
-      <div id="tab-study" class="content-block">
-        <div class="panel" style="margin-bottom: 0">
-          <h3>Кодовая таблица и напевы (нажмите для контрольного прослушивания)</h3>
-          <div class="table-grid" id="studyGrid"></div>
-        </div>
-      </div>
-
-      <!-- 4. ТРАКТ ПЧ/НЧ, QSB И ФРОНТЫ -->
-      <div id="tab-settings" class="content-block">
-        <div class="grid-2">
-          <div class="panel">
-            <h3>Акустический тракт НЧ (на лету)</h3>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Несущая частота тона:</span>
-                <b id="lblToneFreq">700 Гц</b>
-              </div>
-              <input type="range" id="rngToneFreq" min="400" max="1100" value="700" />
-            </div>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Уровень сигнала НЧ:</span>
-                <b id="lblToneVol">70%</b>
-              </div>
-              <input type="range" id="rngToneVol" min="0" max="100" value="70" />
-            </div>
-
-            <h3 style="margin-top: 16px">Формирование фронтов (Anti-Clicking)</h3>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Постоянная времени сглаживания (τ_фронта):</span>
-                <b id="lblRampTime">6 мс</b>
-              </div>
-              <input type="range" id="rngRampTime" min="1" max="25" value="6" />
-            </div>
-            <div class="form-group">
-              <label>Профиль огибающей:</label>
-              <select id="selRampShape" onchange="applyAudioParamsNow()">
-                <option value="rc" selected>Экспоненциальный RC (Мягкий эфирный тон)</option>
-                <option value="linear">Линейный трапецеидальный</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h3>Эфир: замирания (QSB) и радиопомехи</h3>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Глубина замираний (QSB):</span>
-                <b id="lblQsbDepth">50%</b>
-              </div>
-              <input type="range" id="rngQsbDepth" min="0" max="95" value="50" />
-            </div>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Период цикла замираний:</span>
-                <b id="lblQsbPeriod">5.0 сек</b>
-              </div>
-              <input type="range" id="rngQsbPeriod" min="15" max="120" value="50" />
-            </div>
-
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Атмосферный шум (QRN):</span>
-                <b id="lblNoiseVol">35%</b>
-              </div>
-              <input type="range" id="rngNoiseVol" min="0" max="100" value="35" />
-            </div>
-            <div class="slider-group">
-              <div class="slider-label">
-                <span>Мешающая радиостанция (QRM):</span>
-                <b id="lblQrmVol">25%</b>
-              </div>
-              <input type="range" id="rngQrmVol" min="0" max="100" value="25" />
-            </div>
-
-            <div style="margin-top: 14px">
-              <button class="action-btn btn-check" id="btnTestTone" style="width: 100%; height: 32px" onclick="toggleTestTone()">
-                🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН ДЛЯ НАСТРОЙКИ
-              </button>
-            </div>
-          </div>
+        <div class="action-btns">
+          <button class="action-btn btn-start" id="btnRxStart">ПУСК ПРИЁМА</button>
+          <button class="action-btn btn-stop" id="btnRxStop" disabled>СТОП</button>
+          <button class="action-btn btn-check" id="btnRxCheck">КОНТРОЛЬ</button>
         </div>
       </div>
     </div>
+    <div class="panel" style="margin-bottom:0">
+      <h3>Журнал оператора (принятый текст):</h3>
+      <textarea id="txtUserInput" placeholder="Ввод принятых групп через пробел (укороченный 0 вводится как [0]+[-])..."></textarea>
+      <div style="margin-top:8px">
+        <div class="rx-result" id="diffBox" style="display:none"></div>
+        <div id="examReport" style="margin-top:6px;font-weight:bold;color:var(--mil-amber);font-size:11px"></div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-tx" class="content-block">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Конфигурация передающего манипулятора</h3>
+        <div class="keyer-mode-toggle">
+          <button class="keyer-mode-btn active" id="btnModeStraight" onclick="setKeyerMode('straight')">ВЕРТИКАЛЬНЫЙ (РУЧНОЙ)</button>
+          <button class="keyer-mode-btn" id="btnModeIambic" onclick="setKeyerMode('iambic')">ЭЛЕКТРОННЫЙ (IAMBIC)</button>
+        </div>
+        <div id="straightKeyParams">
+          <div class="slider-group">
+            <div class="slider-label"><span>Определяемый темп руки (АРУ):</span><b id="lblTxDetected">70 зн/мин [ПОИСК]</b></div>
+            <div style="font-size:9px;color:var(--mil-dim);margin-top:3px">Динамический адаптивный фильтр темпа (EMA α=0.28).</div>
+          </div>
+        </div>
+        <div id="iambicKeyParams" style="display:none">
+          <div class="slider-group">
+            <div class="slider-label"><span>Скорость автомата передачи:</span><b id="lblIambicSpeed">70 зн/мин</b></div>
+            <input type="range" id="rngIambicSpeed" min="30" max="220" value="70"/>
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label>Орган управления манипулятором:</label>
+            <select id="selIambicInputSource" onchange="switchIambicInputSource(this.value)">
+              <option value="KEYS" selected>КЛАВИАТУРА [ Z / X ] или [ Я / Ч ]</option>
+              <option value="MOUSE">МЫШЬ (ЛКМ - ТОЧКА, ПКМ - ТИРЕ)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin:12px 0">
+          <div class="morse-key-single" id="virtualKey">МАНИПУЛЯТОР (КЛАВИША ПРОБЕЛ)</div>
+          <div class="iambic-paddle-container" id="virtualPaddle" style="display:none">
+            <div class="paddle-lever" id="paddleLeft"><span>● ТОЧКА (DIT)</span><span style="font-size:8px;color:var(--mil-dim)">[ Z ] или [ Я ]</span></div>
+            <div class="paddle-lever" id="paddleRight"><span>▬ ТИРЕ (DAH)</span><span style="font-size:8px;color:var(--mil-dim)">[ X ] или [ Ч ]</span></div>
+          </div>
+          <div class="mouse-pad-zone" id="mousePadZone">
+            <div class="mouse-pad-halves">
+              <div class="mouse-half" id="padHalfLeft"><span>● ЛКМ: ТОЧКА</span><span style="font-size:8px">УДЕРЖАНИЕ ДЛЯ СЕРИИ</span></div>
+              <div class="mouse-pad-divider"></div>
+              <div class="mouse-half" id="padHalfRight"><span>▬ ПКМ: ТИРЕ</span><span style="font-size:8px">ОБА КЛИКА: СЖАТИЕ</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="live-morse-buffer" id="lblLiveMorseBuffer">БУФЕР СИМВОЛА: [ ГОТОВ ]</div>
+        <button class="action-btn btn-stop" style="width:100%;height:32px;margin-top:8px" onclick="clearTx()">Очистить регистр</button>
+      </div>
+      <div class="panel">
+        <h3>Регистр декодированных сигналов:</h3>
+        <div class="rx-result" id="txDecoded" style="height:145px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-study" class="content-block">
+    <div class="panel">
+      <h3>Настройки воспроизведения кодов</h3>
+      <div class="slider-group" style="margin-bottom:0">
+        <div class="slider-label"><span>Независимая скорость (только для этой вкладки):</span><b id="lblStudySpeed">70 зн/мин</b></div>
+        <input type="range" id="rngStudySpeed" min="30" max="200" value="70"/>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <h3>Кодовая таблица и напевы</h3>
+      <div class="table-grid" id="studyGrid"></div>
+    </div>
+  </div>
+  <div id="tab-settings" class="content-block">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Акустический тракт НЧ</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Несущая частота:</span><b id="lblToneFreq">700 Гц</b></div>
+          <input type="range" id="rngToneFreq" min="400" max="1100" value="700"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Уровень НЧ:</span><b id="lblToneVol">70%</b></div>
+          <input type="range" id="rngToneVol" min="0" max="100" value="70"/>
+        </div>
+        <h3 style="margin-top:16px">Формирование фронтов</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Время сглаживания фронта:</span><b id="lblRampTime">6 мс</b></div>
+          <input type="range" id="rngRampTime" min="1" max="25" value="6"/>
+        </div>
+        <div class="form-group">
+          <label>Профиль огибающей:</label>
+          <select id="selRampShape" onchange="applyAudioParamsNow()">
+            <option value="rc" selected>Экспоненциальный RC</option>
+            <option value="linear">Линейный трапецеидальный</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Эфир: замирания и радиопомехи</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Глубина замираний (QSB):</span><b id="lblQsbDepth">50%</b></div>
+          <input type="range" id="rngQsbDepth" min="0" max="95" value="50"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Период цикла замираний:</span><b id="lblQsbPeriod">5.0 сек</b></div>
+          <input type="range" id="rngQsbPeriod" min="15" max="120" value="50"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Атмосферный шум (QRN):</span><b id="lblNoiseVol">35%</b></div>
+          <input type="range" id="rngNoiseVol" min="0" max="100" value="35"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Мешающая станция (QRM):</span><b id="lblQrmVol">25%</b></div>
+          <input type="range" id="rngQrmVol" min="0" max="100" value="25"/>
+        </div>
+        <div style="margin-top:14px">
+          <button class="action-btn btn-check" id="btnTestTone" style="width:100%;height:32px" onclick="toggleTestTone()">🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <script>
-      // 1. ПОЛИФИЛЫ СОВМЕСТИМОСТИ FIREFOX 43-45 (GECKO / ASTRA LINUX)
-      if (!("innerText" in document.createElement("div"))) {
-        Object.defineProperty(HTMLElement.prototype, "innerText", {
-          get: function () {
-            return this.textContent;
-          },
-          set: function (val) {
-            this.textContent = val;
-          },
-          configurable: true,
-          enumerable: true
-        });
+<script>
+// ПОЛИФИЛЫ И СОВМЕСТИМОСТЬ ДЛЯ DEBIAN 8 / ASTRA LINUX / FIREFOX 43 (GECKO)
+if (!("innerText" in document.createElement("div"))) {
+  Object.defineProperty(HTMLElement.prototype, "innerText", {
+    get: function(){ return this.textContent; },
+    set: function(val){ this.textContent = val; },
+    configurable: true, enumerable: true
+  });
+}
+
+function findAncestor(el, cls) {
+  while (el && el !== document) {
+    if (el.className && el.className.indexOf(cls) !== -1) return el;
+    el = el.parentNode;
+  }
+  return null;
+}
+
+function setUiText(idOrElem, text) {
+  var el = typeof idOrElem === "string" ? document.getElementById(idOrElem) : idOrElem;
+  if (el) el.textContent = text;
+}
+
+// РЕАЛИЗАЦИЯ 1.2 В: ВВОД КОРОТКОГО НУЛЯ (Ø) ЧЕРЕЗ 0 И -
+var isZeroKeyPressed = false;
+var isMinusKeyPressed = false;
+var lastZeroPressTime = 0;
+var lastMinusPressTime = 0;
+var CHORD_TOLERANCE_MS = 180; // Временное окно одновременности
+
+function isZeroKeyCode(code) {
+  return code === 48 || code === 96; // Основной '0' или Numpad 0
+}
+
+function isMinusKeyCode(code) {
+  return code === 189 || code === 173 || code === 109; // '-' в Firefox/Standard и NumpadSubtract
+}
+
+function replaceTextAtCursor(target, replacement, replaceCharsBack) {
+  replaceCharsBack = replaceCharsBack || 0;
+  var start = target.selectionStart;
+  var end = target.selectionEnd;
+  var val = target.value;
+
+  if (typeof start === "number" && typeof end === "number") {
+    var actualStart = Math.max(0, start - replaceCharsBack);
+    var before = val.substring(0, actualStart);
+    var after = val.substring(end);
+    target.value = before + replacement + after;
+    var newPos = actualStart + replacement.length;
+    target.setSelectionRange(newPos, newPos);
+  } else {
+    target.value += replacement;
+  }
+
+  // Генерация события input для пересчёта валидации и генератора
+  try {
+    var evt = document.createEvent("Event");
+    evt.initEvent("input", true, true);
+    target.dispatchEvent(evt);
+  } catch (ex) {
+    if (target.oninput) target.oninput();
+  }
+}
+
+function attachShortZeroHandler(elem) {
+  if (!elem || elem.__shortZeroAttached) return;
+  elem.__shortZeroAttached = true;
+
+  elem.addEventListener("keydown", function (e) {
+    var kc = e.keyCode || e.which;
+    var now = Date.now();
+
+    if (isZeroKeyCode(kc)) {
+      isZeroKeyPressed = true;
+      lastZeroPressTime = now;
+
+      // Если в этот момент уже зажат минус, либо минус был нажат менее CHORD_TOLERANCE_MS назад
+      if (isMinusKeyPressed || (now - lastMinusPressTime <= CHORD_TOLERANCE_MS)) {
+        if (e.preventDefault) e.preventDefault();
+        var eraseCount = (now - lastMinusPressTime <= CHORD_TOLERANCE_MS) ? 1 : 0;
+        replaceTextAtCursor(elem, "Ø", eraseCount);
+        lastZeroPressTime = 0;
+        lastMinusPressTime = 0;
+        return;
       }
+    } else if (isMinusKeyCode(kc)) {
+      isMinusKeyPressed = true;
+      lastMinusPressTime = now;
 
-      if (window.NodeList && !NodeList.prototype.forEach) {
-        NodeList.prototype.forEach = function (callback, thisArg) {
-          thisArg = thisArg || window;
-          for (var i = 0; i < this.length; i++) {
-            callback.call(thisArg, this[i], i, this);
-          }
-        };
+      // Если в этот момент уже зажат 0, либо 0 был нажат менее CHORD_TOLERANCE_MS назад
+      if (isZeroKeyPressed || (now - lastZeroPressTime <= CHORD_TOLERANCE_MS)) {
+        if (e.preventDefault) e.preventDefault();
+        var eraseCount2 = (now - lastZeroPressTime <= CHORD_TOLERANCE_MS) ? 1 : 0;
+        replaceTextAtCursor(elem, "Ø", eraseCount2);
+        lastZeroPressTime = 0;
+        lastMinusPressTime = 0;
+        return;
       }
+    }
+  }, false);
 
-      if (!Element.prototype.closest) {
-        Element.prototype.closest = function (s) {
-          var el = this;
-          do {
-            if (el.nodeType === 1) {
-              var matches = (el.document || el.ownerDocument || document).querySelectorAll(s);
-              var i = matches.length;
-              while (--i >= 0 && matches.item(i) !== el) {}
-              if (i > -1) return el;
-            }
-            el = el.parentElement || el.parentNode;
-          } while (el !== null && el.nodeType === 1);
-          return null;
-        };
+  elem.addEventListener("keyup", function (e) {
+    var kc = e.keyCode || e.which;
+    if (isZeroKeyCode(kc)) isZeroKeyPressed = false;
+    if (isMinusKeyCode(kc)) isMinusKeyPressed = false;
+  }, false);
+
+  // Комбинированная автозамена: если ввод 0- или -0 проскочил
+  elem.addEventListener("input", function () {
+    var val = this.value;
+    if (val.indexOf("0-") !== -1 || val.indexOf("-0") !== -1) {
+      var s = this.selectionStart;
+      this.value = val.replace(/0-|-0/g, "Ø");
+      if (typeof s === "number") {
+        var diff = val.length - this.value.length;
+        this.setSelectionRange(Math.max(0, s - diff), Math.max(0, s - diff));
       }
+    }
+  }, false);
+}
 
-      // Безопасный сеттер текстового содержимого
-      function setUiText(idOrElem, text) {
-        var el = typeof idOrElem === "string" ? document.getElementById(idOrElem) : idOrElem;
-        if (el) el.textContent = text;
-      }
+// Прикрепление слушателя ко всем существующим полям ввода
+function setupShortZeroHandlers() {
+  var inputs = [
+    document.getElementById("customCharset"),
+    document.getElementById("accentCharset"),
+    document.getElementById("monoCharInput"),
+    document.getElementById("txtUserInput")
+  ];
+  for (var i = 0; i < inputs.length; i++) {
+    if (inputs[i]) attachShortZeroHandler(inputs[i]);
+  }
+}
 
-      // 2. WEB WORKER ТАЙМЕР
-      var bgTimerWorker = null;
-      var workerTimerSeq = 0;
-      var pendingWorkerCallbacks = {};
+var bgTimerWorker = null;
+var workerTimerSeq = 0;
+var pendingWorkerCallbacks = {};
 
-      try {
-        var workerBlob = new Blob(
-          ["var timers={};self.onmessage=function(e){if(e.data.action==='start'){timers[e.data.id]=setTimeout(function(){self.postMessage({id:e.data.id});delete timers[e.data.id];},e.data.ms);}else if(e.data.action==='cancel'){if(timers[e.data.id]){clearTimeout(timers[e.data.id]);delete timers[e.data.id];}}};"],
-          { type: "application/javascript" }
-        );
-        var workerUrl = window.URL.createObjectURL(workerBlob);
-        bgTimerWorker = new Worker(workerUrl);
-        bgTimerWorker.onmessage = function (e) {
-          var cb = pendingWorkerCallbacks[e.data.id];
-          if (cb) {
-            delete pendingWorkerCallbacks[e.data.id];
-            cb();
-          }
-        };
-      } catch (err) {
-        bgTimerWorker = null;
-      }
+try {
+  var workerBlob = new Blob(
+    ["var timers={};self.onmessage=function(e){if(e.data.action==='start'){timers[e.data.id]=setTimeout(function(){self.postMessage({id:e.data.id});delete timers[e.data.id];},e.data.ms);}else if(e.data.action==='cancel'){if(timers[e.data.id]){clearTimeout(timers[e.data.id]);delete timers[e.data.id];}}};"],
+    { type: "application/javascript" }
+  );
+  var workerUrl = window.URL.createObjectURL(workerBlob);
+  bgTimerWorker = new Worker(workerUrl);
+  bgTimerWorker.onmessage = function (e) {
+    var cb = pendingWorkerCallbacks[e.data.id];
+    if (cb) { delete pendingWorkerCallbacks[e.data.id]; cb(); }
+  };
+} catch (err) {
+  bgTimerWorker = null;
+}
 
-      function workerSleep(ms) {
-        var delay = Math.max(1, Math.round(ms));
-        return new Promise(function (resolve) {
-          if (!bgTimerWorker) {
-            setTimeout(resolve, delay);
-            return;
-          }
-          var id = ++workerTimerSeq;
-          pendingWorkerCallbacks[id] = resolve;
-          try {
-            bgTimerWorker.postMessage({ action: "start", id: id, ms: delay });
-          } catch (e) {
-            delete pendingWorkerCallbacks[id];
-            setTimeout(resolve, delay);
-          }
-        });
-      }
+function workerSleep(ms) {
+  var delay = Math.max(1, Math.round(ms));
+  return new Promise(function (resolve) {
+    if (!bgTimerWorker) { setTimeout(resolve, delay); return; }
+    var id = ++workerTimerSeq;
+    pendingWorkerCallbacks[id] = resolve;
+    try {
+      bgTimerWorker.postMessage({ action: "start", id: id, ms: delay });
+    } catch (e) {
+      delete pendingWorkerCallbacks[id];
+      setTimeout(resolve, delay);
+    }
+  });
+}
 
-      // 3. БАЗА ДАННЫХ КОДОВ МОРЗЕ
-      var MORSE_DB = [
-        { ch: "А", code: ".-", mn: "ай-даа" },
-        { ch: "Б", code: "-...", mn: "баа-ки-те-кут" },
-        { ch: "В", code: ".--", mn: "ви-даа-лаа" },
-        { ch: "Г", code: "--.", mn: "гаа-раа-жи" },
-        { ch: "Д", code: "-..", mn: "доо-ми-ки" },
-        { ch: "Е", code: ".", mn: "есть" },
-        { ch: "Ж", code: "...-", mn: "же-ле-зис-тооо" },
-        { ch: "З", code: "--..", mn: "заа-каа-ти-ки" },
-        { ch: "И", code: "..", mn: "и-ди" },
-        { ch: "Й", code: ".---", mn: "йот-у-доо-бно" },
-        { ch: "К", code: "-.-", mn: "каак-же-таак" },
-        { ch: "Л", code: ".-..", mn: "лу-наа-ти-ки" },
-        { ch: "М", code: "--", mn: "маа-маа" },
-        { ch: "Н", code: "-.", mn: "ноо-мер" },
-        { ch: "О", code: "---", mn: "оо-коо-лоо" },
-        { ch: "П", code: ".--.", mn: "пи-лаа-поо-ёт" },
-        { ch: "Р", code: ".-.", mn: "ре-шаа-ет" },
-        { ch: "С", code: "...", mn: "си-ни-е" },
-        { ch: "Т", code: "-", mn: "таак" },
-        { ch: "У", code: "..-", mn: "у-нес-лоо" },
-        { ch: "Ф", code: "..-.", mn: "фи-ли-моон-чик" },
-        { ch: "Х", code: "....", mn: "хи-ми-чи-те" },
-        { ch: "Ц", code: "-.-.", mn: "цаа-пли-наа-ши" },
-        { ch: "Ч", code: "---.", mn: "чаа-шаа-то-нет" },
-        { ch: "Ш", code: "----", mn: "шаа-роо-ваа-ры" },
-        { ch: "Щ", code: "--.-", mn: "щаа-вам-не-шаа" },
-        { ch: "Ъ", code: "-..-", mn: "тоо-твёрдый-знаак" },
-        { ch: "Ы", code: "-.--", mn: "ыы-ВАМ-НЕ-И" },
-        { ch: "Ь", code: "-..-", mn: "тоо-мягкий-знаак" },
-        { ch: "Э", code: "..-..", mn: "э-ле-ктроо-ник" },
-        { ch: "Ю", code: "..--", mn: "ю-ли-аа-на" },
-        { ch: "Я", code: ".-.-", mn: "я-маал-я-маал" },
-        { ch: "1", code: ".----", mn: "и-толь-ко-оо-дииин" },
-        { ch: "2", code: "..---", mn: "два-на-гоо-реек" },
-        { ch: "3", code: "...--", mn: "три-те-бе-маа-лоо" },
-        { ch: "4", code: "....-", mn: "че-тве-ри-тоо-го" },
-        { ch: "5", code: ".....", mn: "пя-ти-паа-ль-чи-ки" },
-        { ch: "6", code: "-....", mn: "поо-шес-ти-бе-ри" },
-        { ch: "7", code: "--...", mn: "даа-даа-се-ме-ри" },
-        { ch: "8", code: "---..", mn: "воо-сьмоо-го-по-ра" },
-        { ch: "9", code: "----.", mn: "дее-вяя-тоо-го-нет" },
-        { ch: "0", code: "-----", mn: "нооль-тоо-оо-коо-лоо" },
-        { ch: "=", code: "-...-", mn: "же-ле-зо-де-лай" },
-        { ch: "/", code: "-..-.", mn: "дрообь-здесь-од-наа" },
-        { ch: "?", code: "..--..", mn: "вы-не-ска-же-тее" },
-        { ch: ",", code: "--..--", mn: "знаак-заа-пяя-тоо-го" },
-        { ch: ".", code: ".-.-.-", mn: "точ-ка-точ-ка-точ-ка" }
-      ];
+var MORSE_DB = [
+  { ch: "А", code: ".-", mn: "ай-даа" }, { ch: "Б", code: "-...", mn: "баа-ки-те-кут" },
+  { ch: "В", code: ".--", mn: "ви-даа-лаа" }, { ch: "Г", code: "--.", mn: "гаа-раа-жи" },
+  { ch: "Д", code: "-..", mn: "доо-ми-ки" }, { ch: "Е", code: ".", mn: "есть" },
+  { ch: "Ж", code: "...-", mn: "же-ле-зис-тооо" }, { ch: "З", code: "--..", mn: "заа-каа-ти-ки" },
+  { ch: "И", code: "..", mn: "и-ди" }, { ch: "Й", code: ".---", mn: "йот-у-доо-бно" },
+  { ch: "К", code: "-.-", mn: "каак-же-таак" }, { ch: "Л", code: ".-..", mn: "лу-наа-ти-ки" },
+  { ch: "М", code: "--", mn: "маа-маа" }, { ch: "Н", code: "-.", mn: "ноо-мер" },
+  { ch: "О", code: "---", mn: "оо-коо-лоо" }, { ch: "П", code: ".--.", mn: "пи-лаа-поо-ёт" },
+  { ch: "Р", code: ".-.", mn: "ре-шаа-ет" }, { ch: "С", code: "...", mn: "си-ни-е" },
+  { ch: "Т", code: "-", mn: "таак" }, { ch: "У", code: "..-", mn: "у-нес-лоо" },
+  { ch: "Ф", code: "..-.", mn: "фи-ли-моон-чик" }, { ch: "Х", code: "....", mn: "хи-ми-чи-те" },
+  { ch: "Ц", code: "-.-.", mn: "цаа-пли-наа-ши" }, { ch: "Ч", code: "---.", mn: "чаа-шаа-то-нет" },
+  { ch: "Ш", code: "----", mn: "шаа-роо-ваа-ры" }, { ch: "Щ", code: "--.-", mn: "щаа-вам-не-шаа" },
+  { ch: "Ъ", code: "-..-", mn: "тоо-твёрдый-знаак" }, { ch: "Ы", code: "-.--", mn: "ыы-ВАМ-НЕ-И" },
+  { ch: "Ь", code: "-..-", mn: "тоо-мягкий-знаак" }, { ch: "Э", code: "..-..", mn: "э-ле-ктроо-ник" },
+  { ch: "Ю", code: "..--", mn: "ю-ли-аа-на" }, { ch: "Я", code: ".-.-", mn: "я-маал-я-маал" },
+  { ch: "1", code: ".----", mn: "и-толь-ко-оо-дииин" }, { ch: "2", code: "..---", mn: "два-на-гоо-реек" },
+  { ch: "3", code: "...--", mn: "три-те-бе-маа-лоо" }, { ch: "4", code: "....-", mn: "че-тве-ри-тоо-го" },
+  { ch: "5", code: ".....", mn: "пя-ти-паа-ль-чи-ки" }, { ch: "6", code: "-....", mn: "поо-шес-ти-бе-ри" },
+  { ch: "7", code: "--...", mn: "даа-даа-се-ме-ри" }, { ch: "8", code: "---..", mn: "воо-сьмоо-го-по-ра" },
+  { ch: "9", code: "----.", mn: "дее-вяя-тоо-го-нет" }, 
+  { ch: "0", code: "-----", mn: "нооль-тоо-оо-коо-лоо" }, { ch: "Ø", code: "-", mn: "нооль" },
+  { ch: "=", code: "-...-", mn: "же-ле-зо-де-лай" }, { ch: "/", code: "-..-.", mn: "дрообь-здесь-од-наа" },
+  { ch: "?", code: "..--..", mn: "вы-не-ска-же-тее" }, { ch: ",", code: "--..--", mn: "знаак-заа-пяя-тоо-го" },
+  { ch: ".", code: ".-.-.-", mn: "точ-ка-точ-ка-точ-ка" }
+];
 
-      var MORSE_MAP = {};
-      var REVERSE_MORSE = {};
-      for (var i = 0; i < MORSE_DB.length; i++) {
-        MORSE_MAP[MORSE_DB[i].ch] = MORSE_DB[i].code;
-        if (!REVERSE_MORSE[MORSE_DB[i].code]) {
-          REVERSE_MORSE[MORSE_DB[i].code] = MORSE_DB[i].ch;
+var MORSE_MAP = {};
+var REVERSE_MORSE = {};
+for (var i = 0; i < MORSE_DB.length; i++) {
+  MORSE_MAP[MORSE_DB[i].ch] = MORSE_DB[i].code;
+  if (!REVERSE_MORSE[MORSE_DB[i].code]) REVERSE_MORSE[MORSE_DB[i].code] = MORSE_DB[i].ch;
+}
+
+function cleanMorseChars(str) {
+  if (!str) return "";
+  return ("" + str).toUpperCase().replace(/Ё/g, "Е").replace(/[^A-ZА-Я0-9Ø=\/?,\.]/gi, "");
+}
+
+function autoGrow(el) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = (el.scrollHeight + 4) + "px";
+}
+
+function refreshAllAutoGrows() {
+  var list = document.querySelectorAll(".teacher-auto-expand");
+  for (var i = 0; i < list.length; i++) autoGrow(list[i]);
+}
+
+function ensureCharInCharset(ch) {
+  ch = cleanMorseChars(ch);
+  if (!ch) return;
+  var customField = document.getElementById("customCharset");
+  var cur = cleanMorseChars(customField.value);
+  if (cur.indexOf(ch) === -1) {
+    customField.value = (customField.value.trim() + " " + ch).trim();
+    autoGrow(customField);
+  }
+}
+
+var audioCtx = null, mainToneOsc = null, keyingGain = null, qsbGain = null, qsbLfo = null, qsbDepthGain = null, masterToneGain = null;
+var noiseNode = null, noiseGain = null, qrmOsc = null, qrmGain = null;
+var noiseEnabled = false, rxActive = false, isTestToneOn = false;
+
+function initAudio() {
+  if (audioCtx) {
+    if (audioCtx.state === "suspended" && audioCtx.resume) { try { audioCtx.resume(); } catch (e) {} }
+    return true;
+  }
+  try {
+    var AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtxClass) return false;
+    audioCtx = new AudioCtxClass();
+    var now = audioCtx.currentTime;
+
+    mainToneOsc = audioCtx.createOscillator();
+    mainToneOsc.type = "sine";
+    var freq = parseFloat(document.getElementById("rngToneFreq").value) || 700;
+    mainToneOsc.frequency.setValueAtTime(freq, now);
+
+    keyingGain = audioCtx.createGain();
+    keyingGain.gain.setValueAtTime(0, now);
+
+    qsbGain = audioCtx.createGain();
+    qsbGain.gain.setValueAtTime(1.0, now);
+
+    qsbLfo = audioCtx.createOscillator();
+    qsbLfo.type = "sine";
+    var qsbPeriod = Math.max(1.5, (parseFloat(document.getElementById("rngQsbPeriod").value) || 50) / 10);
+    qsbLfo.frequency.setValueAtTime(1 / qsbPeriod, now);
+
+    qsbDepthGain = audioCtx.createGain();
+    qsbDepthGain.gain.setValueAtTime(0, now);
+
+    qsbLfo.connect(qsbDepthGain);
+    qsbDepthGain.connect(qsbGain.gain);
+    try { qsbLfo.start(0); } catch (e) {}
+
+    masterToneGain = audioCtx.createGain();
+    var vol = ((parseFloat(document.getElementById("rngToneVol").value) || 70) / 100) * 0.4;
+    masterToneGain.gain.setValueAtTime(vol, now);
+
+    mainToneOsc.connect(keyingGain);
+    keyingGain.connect(qsbGain);
+    qsbGain.connect(masterToneGain);
+    masterToneGain.connect(audioCtx.destination);
+    try { mainToneOsc.start(0); } catch (e) {}
+
+    var sampleRate = audioCtx.sampleRate || 44100;
+    var bufSize = sampleRate * 2;
+    var buf = audioCtx.createBuffer(1, bufSize, sampleRate);
+    var data = buf.getChannelData(0);
+    var b0 = 0, b1 = 0, b2 = 0;
+    for (var i = 0; i < bufSize; i++) {
+      var white = Math.random() * 2 - 1;
+      b0 = 0.99765 * b0 + white * 0.055;
+      b1 = 0.963 * b1 + white * 0.16;
+      b2 = 0.57 * b2 + white * 0.42;
+      data[i] = (b0 + b1 + b2 + white * 0.08) * 0.12;
+    }
+
+    noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = buf;
+    noiseNode.loop = true;
+
+    var bpf = audioCtx.createBiquadFilter();
+    bpf.type = "bandpass";
+    bpf.frequency.setValueAtTime(750, now);
+    bpf.Q.setValueAtTime(1.4, now);
+
+    noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(0, now);
+    noiseNode.connect(bpf);
+    bpf.connect(noiseGain);
+    noiseGain.connect(audioCtx.destination);
+    try { noiseNode.start(0); } catch (e) {}
+
+    qrmOsc = audioCtx.createOscillator();
+    qrmGain = audioCtx.createGain();
+    qrmOsc.frequency.setValueAtTime(890, now);
+    qrmGain.gain.setValueAtTime(0, now);
+    qrmOsc.connect(qrmGain);
+    qrmGain.connect(audioCtx.destination);
+    try { qrmOsc.start(0); } catch (e) {}
+
+    applyAudioParamsNow();
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function applyAudioParamsNow() {
+  if (!audioCtx) return;
+  try {
+    var now = audioCtx.currentTime;
+    var freq = parseFloat(document.getElementById("rngToneFreq").value) || 700;
+    var vol = ((parseFloat(document.getElementById("rngToneVol").value) || 70) / 100) * 0.4;
+    mainToneOsc.frequency.setValueAtTime(freq, now);
+    masterToneGain.gain.setValueAtTime(vol, now);
+
+    var isNoiseAudible = (noiseEnabled && rxActive) || isTestToneOn;
+    var nVol = isNoiseAudible ? parseFloat(document.getElementById("rngNoiseVol").value) / 250 : 0;
+    noiseGain.gain.setTargetAtTime(nVol, now, 0.02);
+
+    var qVol = isNoiseAudible ? parseFloat(document.getElementById("rngQrmVol").value) / 350 : 0;
+    qrmGain.gain.setTargetAtTime(qVol, now, 0.02);
+
+    var qsbActive = noiseEnabled || isTestToneOn;
+    var qsbDepth = qsbActive ? parseFloat(document.getElementById("rngQsbDepth").value) / 100 : 0;
+    var qsbPeriod = Math.max(1.0, parseFloat(document.getElementById("rngQsbPeriod").value) / 10);
+    qsbLfo.frequency.setValueAtTime(1 / qsbPeriod, now);
+
+    var midGain = 1.0 - qsbDepth * 0.48;
+    var lfoAmp = qsbDepth * 0.48;
+    qsbGain.gain.setTargetAtTime(midGain, now, 0.02);
+    qsbDepthGain.gain.setTargetAtTime(lfoAmp, now, 0.02);
+  } catch (e) {}
+}
+
+function toneOn(source) {
+  source = source || "TX";
+  if (!initAudio()) return;
+  var led = document.getElementById("rxTxLed");
+  if (led) led.className = "led on";
+  setTapeSignal(1, source);
+  try {
+    var now = audioCtx.currentTime;
+    var rampSec = Math.max(0.001, (parseFloat(document.getElementById("rngRampTime").value) || 6) / 1000);
+    var shape = document.getElementById("selRampShape").value;
+    keyingGain.gain.cancelScheduledValues(now);
+    if (shape === "linear") {
+      keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
+      keyingGain.gain.linearRampToValueAtTime(1.0, now + rampSec);
+    } else {
+      keyingGain.gain.setTargetAtTime(1.0, now, rampSec / 2.5);
+    }
+  } catch (e) {}
+}
+
+function toneOff(source) {
+  source = source || "TX";
+  var led = document.getElementById("rxTxLed");
+  if (led) led.className = "led";
+  setTapeSignal(0, source);
+  if (!audioCtx || !keyingGain) return;
+  try {
+    var now = audioCtx.currentTime;
+    var rampSec = Math.max(0.001, (parseFloat(document.getElementById("rngRampTime").value) || 6) / 1000);
+    var shape = document.getElementById("selRampShape").value;
+    keyingGain.gain.cancelScheduledValues(now);
+    if (shape === "linear") {
+      keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
+      keyingGain.gain.linearRampToValueAtTime(0.0001, now + rampSec);
+    } else {
+      keyingGain.gain.setTargetAtTime(0.0001, now, rampSec / 2.5);
+    }
+  } catch (e) {}
+}
+
+function toggleTestTone() {
+  initAudio();
+  var btn = document.getElementById("btnTestTone");
+  isTestToneOn = !isTestToneOn;
+  if (isTestToneOn) {
+    btn.style.background = "#5a1e1c";
+    setUiText(btn, "■ ОСТАНОВИТЬ ТЕСТОВЫЙ ТОН");
+    toneOn("RX");
+  } else {
+    btn.style.background = "#23374c";
+    setUiText(btn, "🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН");
+    toneOff("RX");
+  }
+  applyAudioParamsNow();
+}
+
+function toggleNoiseViaBox() {
+  var chk = document.getElementById("chkQuickNoise");
+  chk.checked = !chk.checked;
+  toggleNoiseFromMain(chk.checked);
+}
+
+function toggleNoiseFromMain(state) {
+  initAudio();
+  noiseEnabled = state;
+  applyAudioParamsNow();
+}
+
+var canvas = document.getElementById("undulatorCanvas");
+var ctx = canvas.getContext("2d");
+var tapeState = 0, tapePoints = [], lastUndulatorTime = window.performance && performance.now ? performance.now() : Date.now();
+var logicalCanvasWidth = 800, logicalCanvasHeight = 65, tapeScrollOffset = 0;
+
+function resizeCanvas() {
+  if (!canvas || !canvas.parentElement) return;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  if (rect.width <= 0) return;
+  var dpr = window.devicePixelRatio || 1;
+  logicalCanvasWidth = rect.width;
+  logicalCanvasHeight = rect.height || 65;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(logicalCanvasHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", resizeCanvas);
+
+function setTapeSignal(state, source) {
+  var sel = document.getElementById("selTapeSource");
+  var mode = sel ? sel.value : "ALL";
+  if (mode === "TX_ONLY" && source !== "TX") return;
+  if (mode === "RX_ONLY" && source !== "RX") return;
+  tapeState = state ? 1 : 0;
+}
+
+function renderUndulator() {
+  var now = window.performance && performance.now ? performance.now() : Date.now();
+  var dt = (now - lastUndulatorTime) / 1000;
+  lastUndulatorTime = now;
+  if (dt > 0.08) dt = 0.08;
+
+  var speed = parseFloat(document.getElementById("rngTapeSpeed").value) || 120;
+  var dx = speed * dt;
+  tapeScrollOffset = (tapeScrollOffset + dx) % 40;
+
+  for (var i = 0; i < tapePoints.length; i++) tapePoints[i].x -= dx;
+  while (tapePoints.length > 0 && tapePoints[0].x < -30) tapePoints.shift();
+
+  var targetY = tapeState ? 18 : 48;
+  tapePoints.push({ x: logicalCanvasWidth, y: targetY });
+
+  ctx.fillStyle = "#0c1209";
+  ctx.fillRect(0, 0, logicalCanvasWidth, logicalCanvasHeight);
+
+  ctx.strokeStyle = "#1b2816";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 18); ctx.lineTo(logicalCanvasWidth, 18);
+  ctx.moveTo(0, 48); ctx.lineTo(logicalCanvasWidth, 48);
+  ctx.stroke();
+
+  ctx.beginPath();
+  for (var x = logicalCanvasWidth - tapeScrollOffset; x > 0; x -= 40) {
+    ctx.moveTo(Math.round(x) + 0.5, 0);
+    ctx.lineTo(Math.round(x) + 0.5, logicalCanvasHeight);
+  }
+  ctx.stroke();
+
+  if (tapePoints.length > 1) {
+    ctx.beginPath();
+    ctx.strokeStyle = "#38ff38";
+    ctx.lineWidth = 2.2;
+    ctx.moveTo(tapePoints[0].x, tapePoints[0].y);
+    for (var j = 1; j < tapePoints.length; j++) {
+      var prev = tapePoints[j - 1], curr = tapePoints[j];
+      if (prev.y !== curr.y) ctx.lineTo(curr.x, prev.y);
+      ctx.lineTo(curr.x, curr.y);
+    }
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = tapeState ? "#ffb000" : "#517245";
+  ctx.beginPath();
+  ctx.arc(logicalCanvasWidth - 3, targetY, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  requestAnimationFrame(renderUndulator);
+}
+
+function clearTape() { tapePoints = []; }
+
+function setTrainerLocked(isLocked) {
+  var cells = document.querySelectorAll(".group-cell:not(.group-cell-add)");
+  for (var i = 0; i < cells.length; i++) {
+    var inp = cells[i].querySelector(".group-input-val");
+    var disp = cells[i].querySelector(".group-chars-display");
+    if (isLocked) {
+      cells[i].className = cells[i].className.replace(/\blocked\b/g, "").trim() + " locked";
+      if (inp) inp.style.display = "none";
+      if (disp) {
+        disp.style.display = "flex";
+        disp.innerHTML = "";
+        var cleanVal = cleanMorseChars(inp ? inp.value : "");
+        for (var c = 0; c < cleanVal.length; c++) {
+          var span = document.createElement("span");
+          span.className = "char-slot";
+          span.textContent = cleanVal[c];
+          disp.appendChild(span);
         }
       }
+    } else {
+      cells[i].className = cells[i].className.replace(/\blocked\b/g, "").trim();
+      if (inp) inp.style.display = "block";
+      if (disp) disp.style.display = "none";
+    }
+  }
 
-      function cleanMorseChars(str) {
-        if (!str) return "";
-        return ("" + str).toUpperCase().replace(/Ё/g, "Е").replace(/[^A-ZА-Я0-9=\/?,\.]/gi, "");
+  var addCell = document.getElementById("cellAddGroup");
+  if (addCell) addCell.style.display = isLocked ? "none" : "flex";
+
+  document.getElementById("customCharset").disabled = isLocked;
+  document.getElementById("accentCharset").disabled = isLocked;
+  document.getElementById("groupLength").disabled = isLocked;
+  document.getElementById("numGroups").disabled = isLocked;
+  document.getElementById("groupRepeat").disabled = isLocked;
+  document.getElementById("selPreambleMode").disabled = isLocked;
+  document.getElementById("btnGenGroups").disabled = isLocked;
+  document.getElementById("monoCharInput").disabled = isLocked;
+  document.getElementById("monoCharCount").disabled = isLocked;
+  document.getElementById("btnInsertMono").disabled = isLocked;
+
+  var badges = document.querySelectorAll(".preset-badge");
+  for (var b = 0; b < badges.length; b++) {
+    if (isLocked) badges[b].className += " disabled";
+    else badges[b].className = badges[b].className.replace(/\bdisabled\b/g, "").trim();
+  }
+}
+
+function highlightGroup(gIdx) {
+  var cells = document.querySelectorAll(".group-cell:not(.group-cell-add)");
+  for (var i = 0; i < cells.length; i++) {
+    if (i === gIdx) {
+      cells[i].className += " active-group";
+      try { cells[i].scrollIntoView(true); } catch (e) {}
+    } else {
+      cells[i].className = cells[i].className.replace(/\bactive-group\b/g, "").trim();
+    }
+  }
+}
+
+function highlightChar(gIdx, cIdx) {
+  var cell = document.getElementById("grp-cell-" + gIdx);
+  if (!cell) return;
+  var slots = cell.querySelectorAll(".char-slot");
+  for (var i = 0; i < slots.length; i++) {
+    if (i === cIdx) slots[i].className = "char-slot active-char";
+    else if (i < cIdx) slots[i].className = "char-slot past-char";
+    else slots[i].className = "char-slot";
+  }
+}
+
+function releaseCharHighlight(gIdx, cIdx) {
+  var cell = document.getElementById("grp-cell-" + gIdx);
+  if (!cell) return;
+  var slots = cell.querySelectorAll(".char-slot");
+  if (slots[cIdx]) slots[cIdx].className = "char-slot past-char";
+}
+
+function clearAllHighlights() {
+  var slots = document.querySelectorAll(".char-slot");
+  for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
+  var cells = document.querySelectorAll(".group-cell");
+  for (var j = 0; j < cells.length; j++) cells[j].className = cells[j].className.replace(/\bactive-group\b/g, "").trim();
+}
+
+var rxActiveGeneration = 0, targetRadiogram = "";
+
+function sleepRx(ms) {
+  var gen = rxActiveGeneration;
+  return workerSleep(ms).then(function () {
+    if (!rxActive || gen !== rxActiveGeneration) throw new Error("STOPPED");
+  });
+}
+
+function getLiveAtomTimings() {
+  var charSpd = parseInt(document.getElementById("rngCharSpeed").value, 10) || 70;
+  var farnSpd = Math.min(charSpd, parseInt(document.getElementById("rngFarnSpeed").value, 10) || 50);
+  var grpMult = (parseFloat(document.getElementById("rngGroupPause").value) || 10) / 10.0;
+  var dotMs = 6000.0 / charSpd;
+  var farnDotMs = 6000.0 / farnSpd;
+  return {
+    dotMs: dotMs,
+    dashMs: dotMs * 3,
+    elemPauseMs: dotMs,
+    charPauseMs: Math.max(0, farnDotMs * 3 - dotMs),
+    groupPauseMs: Math.max(0, (farnDotMs * 7 * grpMult) - dotMs)
+  };
+}
+
+function getStudyAtomTimings() {
+  var charSpd = parseInt(document.getElementById("rngStudySpeed").value, 10) || 70;
+  var dotMs = 6000.0 / charSpd;
+  return {
+    dotMs: dotMs,
+    dashMs: dotMs * 3,
+    elemPauseMs: dotMs
+  };
+}
+
+// ВОСПРОИЗВЕДЕНИЕ ВСТУПЛЕНИЙ (ЗАЧИНОВ)
+function getPreambleItems() {
+  var mode = document.getElementById("selPreambleMode").value;
+  if (mode === "NONE") return [];
+  if (mode === "SINGLE_V") return ["...-"];
+  if (mode === "SERIES_VVV") return ["...-", "...-", "...-"];
+  if (mode === "HST_VTO") return ["...-", "-", "---"]; // ЖТО
+  if (mode === "CALL_VVV_EQ") return ["...-", "...-", "...-", "-...-"]; // VVV =
+  return ["...-"];
+}
+
+function playRadiogramProcess(groups, repeats) {
+  var preambleCodes = getPreambleItems();
+  var pIdx = 0;
+
+  function playPreambleChain() {
+    if (pIdx >= preambleCodes.length || !rxActive) return Promise.resolve();
+    var code = preambleCodes[pIdx++];
+    var s = 0;
+
+    function nextSym() {
+      if (s >= code.length || !rxActive) {
+        var t = getLiveAtomTimings();
+        return sleepRx(t.charPauseMs);
       }
-
-      function autoGrow(el) {
-        if (!el) return;
-        el.style.height = "auto";
-        el.style.height = (el.scrollHeight + 4) + "px";
-      }
-
-      function refreshAllAutoGrows() {
-        var list = document.querySelectorAll(".teacher-auto-expand");
-        for (var i = 0; i < list.length; i++) autoGrow(list[i]);
-      }
-
-      // 4. АУДИОТРАКТ
-      var audioCtx = null;
-      var mainToneOsc = null;
-      var keyingGain = null;
-      var qsbGain = null;
-      var qsbLfo = null;
-      var qsbDepthGain = null;
-      var masterToneGain = null;
-
-      var noiseNode = null;
-      var noiseGain = null;
-      var qrmOsc = null;
-      var qrmGain = null;
-
-      var noiseEnabled = false;
-      var rxActive = false;
-      var isTestToneOn = false;
-
-      function initAudio() {
-        if (audioCtx) {
-          if (audioCtx.state === "suspended") {
-            try { audioCtx.resume(); } catch (e) {}
-          }
-          return true;
-        }
-        try {
-          var AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-          if (!AudioCtxClass) return false;
-          audioCtx = new AudioCtxClass();
-
-          var now = audioCtx.currentTime;
-
-          mainToneOsc = audioCtx.createOscillator();
-          mainToneOsc.type = "sine";
-          var freq = parseFloat(document.getElementById("rngToneFreq").value) || 700;
-          mainToneOsc.frequency.setValueAtTime(freq, now);
-
-          keyingGain = audioCtx.createGain();
-          keyingGain.gain.setValueAtTime(0, now);
-
-          qsbGain = audioCtx.createGain();
-          qsbGain.gain.setValueAtTime(1.0, now);
-
-          qsbLfo = audioCtx.createOscillator();
-          qsbLfo.type = "sine";
-          var qsbPeriod = Math.max(1.5, (parseFloat(document.getElementById("rngQsbPeriod").value) || 50) / 10);
-          qsbLfo.frequency.setValueAtTime(1 / qsbPeriod, now);
-
-          qsbDepthGain = audioCtx.createGain();
-          qsbDepthGain.gain.setValueAtTime(0, now);
-
-          qsbLfo.connect(qsbDepthGain);
-          qsbDepthGain.connect(qsbGain.gain);
-          try { qsbLfo.start(0); } catch (e) {}
-
-          masterToneGain = audioCtx.createGain();
-          var vol = ((parseFloat(document.getElementById("rngToneVol").value) || 70) / 100) * 0.4;
-          masterToneGain.gain.setValueAtTime(vol, now);
-
-          mainToneOsc.connect(keyingGain);
-          keyingGain.connect(qsbGain);
-          qsbGain.connect(masterToneGain);
-          masterToneGain.connect(audioCtx.destination);
-          try { mainToneOsc.start(0); } catch (e) {}
-
-          var sampleRate = audioCtx.sampleRate || 44100;
-          var bufSize = sampleRate * 2;
-          var buf = audioCtx.createBuffer(1, bufSize, sampleRate);
-          var data = buf.getChannelData(0);
-          var b0 = 0, b1 = 0, b2 = 0;
-          for (var i = 0; i < bufSize; i++) {
-            var white = Math.random() * 2 - 1;
-            b0 = 0.99765 * b0 + white * 0.055;
-            b1 = 0.963 * b1 + white * 0.16;
-            b2 = 0.57 * b2 + white * 0.42;
-            data[i] = (b0 + b1 + b2 + white * 0.08) * 0.12;
-          }
-
-          noiseNode = audioCtx.createBufferSource();
-          noiseNode.buffer = buf;
-          noiseNode.loop = true;
-
-          var bpf = audioCtx.createBiquadFilter();
-          bpf.type = "bandpass";
-          bpf.frequency.setValueAtTime(750, now);
-          bpf.Q.setValueAtTime(1.4, now);
-
-          noiseGain = audioCtx.createGain();
-          noiseGain.gain.setValueAtTime(0, now);
-          noiseNode.connect(bpf);
-          bpf.connect(noiseGain);
-          noiseGain.connect(audioCtx.destination);
-          try { noiseNode.start(0); } catch (e) {}
-
-          qrmOsc = audioCtx.createOscillator();
-          qrmGain = audioCtx.createGain();
-          qrmOsc.frequency.setValueAtTime(890, now);
-          qrmGain.gain.setValueAtTime(0, now);
-          qrmOsc.connect(qrmGain);
-          qrmGain.connect(audioCtx.destination);
-          try { qrmOsc.start(0); } catch (e) {}
-
-          applyAudioParamsNow();
-          return true;
-        } catch (err) {
-          return false;
-        }
-      }
-
-      function applyAudioParamsNow() {
-        if (!audioCtx) return;
-        try {
-          var now = audioCtx.currentTime;
-          var freq = parseFloat(document.getElementById("rngToneFreq").value) || 700;
-          var vol = ((parseFloat(document.getElementById("rngToneVol").value) || 70) / 100) * 0.4;
-          mainToneOsc.frequency.setValueAtTime(freq, now);
-          masterToneGain.gain.setValueAtTime(vol, now);
-
-          var isNoiseAudible = (noiseEnabled && rxActive) || isTestToneOn;
-
-          var nVol = isNoiseAudible ? parseFloat(document.getElementById("rngNoiseVol").value) / 250 : 0;
-          noiseGain.gain.setTargetAtTime(nVol, now, 0.02);
-
-          var qVol = isNoiseAudible ? parseFloat(document.getElementById("rngQrmVol").value) / 350 : 0;
-          qrmGain.gain.setTargetAtTime(qVol, now, 0.02);
-
-          var qsbActive = noiseEnabled || isTestToneOn;
-          var qsbDepth = qsbActive ? parseFloat(document.getElementById("rngQsbDepth").value) / 100 : 0;
-          var qsbPeriod = Math.max(1.0, parseFloat(document.getElementById("rngQsbPeriod").value) / 10);
-
-          qsbLfo.frequency.setValueAtTime(1 / qsbPeriod, now);
-
-          var midGain = 1.0 - qsbDepth * 0.48;
-          var lfoAmp = qsbDepth * 0.48;
-
-          qsbGain.gain.setTargetAtTime(midGain, now, 0.02);
-          qsbDepthGain.gain.setTargetAtTime(lfoAmp, now, 0.02);
-        } catch (e) {}
-      }
-
-      function toneOn(source) {
-        source = source || "TX";
-        if (!initAudio()) return;
-        var led = document.getElementById("rxTxLed");
-        if (led) led.className = "led on";
-        setTapeSignal(1, source);
-
-        try {
-          var now = audioCtx.currentTime;
-          var rampSec = Math.max(0.001, (parseFloat(document.getElementById("rngRampTime").value) || 6) / 1000);
-          var shape = document.getElementById("selRampShape").value;
-
-          keyingGain.gain.cancelScheduledValues(now);
-          if (shape === "linear") {
-            keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
-            keyingGain.gain.linearRampToValueAtTime(1.0, now + rampSec);
-          } else {
-            keyingGain.gain.setTargetAtTime(1.0, now, rampSec / 2.5);
-          }
-        } catch (e) {}
-      }
-
-      function toneOff(source) {
-        source = source || "TX";
-        var led = document.getElementById("rxTxLed");
-        if (led) led.className = "led";
-        setTapeSignal(0, source);
-
-        if (!audioCtx || !keyingGain) return;
-        try {
-          var now = audioCtx.currentTime;
-          var rampSec = Math.max(0.001, (parseFloat(document.getElementById("rngRampTime").value) || 6) / 1000);
-          var shape = document.getElementById("selRampShape").value;
-
-          keyingGain.gain.cancelScheduledValues(now);
-          if (shape === "linear") {
-            keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
-            keyingGain.gain.linearRampToValueAtTime(0.0001, now + rampSec);
-          } else {
-            keyingGain.gain.setTargetAtTime(0.0001, now, rampSec / 2.5);
-          }
-        } catch (e) {}
-      }
-
-      function toggleTestTone() {
-        initAudio();
-        var btn = document.getElementById("btnTestTone");
-        isTestToneOn = !isTestToneOn;
-        if (isTestToneOn) {
-          btn.style.background = "#5a1e1c";
-          setUiText(btn, "■ ОСТАНОВИТЬ ТЕСТОВЫЙ ТОН");
-          toneOn("RX");
-        } else {
-          btn.style.background = "#23374c";
-          setUiText(btn, "🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН ДЛЯ НАСТРОЙКИ");
-          toneOff("RX");
-        }
-        applyAudioParamsNow();
-      }
-
-      function toggleNoiseViaBox() {
-        var chk = document.getElementById("chkQuickNoise");
-        chk.checked = !chk.checked;
-        toggleNoiseFromMain(chk.checked);
-      }
-
-      function toggleNoiseFromMain(state) {
-        initAudio();
-        noiseEnabled = state;
-        applyAudioParamsNow();
-      }
-
-      // 5. ОНДУЛЯТОР (САМОПИСЕЦ)
-      var canvas = document.getElementById("undulatorCanvas");
-      var ctx = canvas.getContext("2d");
-      var tapeState = 0;
-      var tapePoints = [];
-      var lastUndulatorTime = window.performance && performance.now ? performance.now() : Date.now();
-      var logicalCanvasWidth = 800;
-      var logicalCanvasHeight = 65;
-      var tapeScrollOffset = 0;
-
-      function resizeCanvas() {
-        if (!canvas || !canvas.parentElement) return;
-        var rect = canvas.parentElement.getBoundingClientRect();
-        if (rect.width <= 0) return;
-        var dpr = window.devicePixelRatio || 1;
-        logicalCanvasWidth = rect.width;
-        logicalCanvasHeight = rect.height || 65;
-        canvas.width = Math.round(rect.width * dpr);
-        canvas.height = Math.round(logicalCanvasHeight * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      window.addEventListener("resize", resizeCanvas);
-
-      function setTapeSignal(state, source) {
-        var sel = document.getElementById("selTapeSource");
-        var mode = sel ? sel.value : "ALL";
-        if (mode === "TX_ONLY" && source !== "TX") return;
-        if (mode === "RX_ONLY" && source !== "RX") return;
-        tapeState = state ? 1 : 0;
-      }
-
-      function renderUndulator() {
-        var now = window.performance && performance.now ? performance.now() : Date.now();
-        var dt = (now - lastUndulatorTime) / 1000;
-        lastUndulatorTime = now;
-        if (dt > 0.08) dt = 0.08;
-
-        var speed = parseFloat(document.getElementById("rngTapeSpeed").value) || 120;
-        var dx = speed * dt;
-        tapeScrollOffset = (tapeScrollOffset + dx) % 40;
-
-        for (var i = 0; i < tapePoints.length; i++) {
-          tapePoints[i].x -= dx;
-        }
-        while (tapePoints.length > 0 && tapePoints[0].x < -30) {
-          tapePoints.shift();
-        }
-
-        var targetY = tapeState ? 18 : 48;
-        tapePoints.push({ x: logicalCanvasWidth, y: targetY });
-
-        ctx.fillStyle = "#0c1209";
-        ctx.fillRect(0, 0, logicalCanvasWidth, logicalCanvasHeight);
-
-        ctx.strokeStyle = "#1b2816";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, 18);
-        ctx.lineTo(logicalCanvasWidth, 18);
-        ctx.moveTo(0, 48);
-        ctx.lineTo(logicalCanvasWidth, 48);
-        ctx.stroke();
-
-        ctx.beginPath();
-        for (var x = logicalCanvasWidth - tapeScrollOffset; x > 0; x -= 40) {
-          ctx.moveTo(Math.round(x) + 0.5, 0);
-          ctx.lineTo(Math.round(x) + 0.5, logicalCanvasHeight);
-        }
-        ctx.stroke();
-
-        if (tapePoints.length > 1) {
-          ctx.beginPath();
-          ctx.strokeStyle = "#38ff38";
-          ctx.lineWidth = 2.2;
-          ctx.moveTo(tapePoints[0].x, tapePoints[0].y);
-          for (var j = 1; j < tapePoints.length; j++) {
-            var prev = tapePoints[j - 1];
-            var curr = tapePoints[j];
-            if (prev.y !== curr.y) ctx.lineTo(curr.x, prev.y);
-            ctx.lineTo(curr.x, curr.y);
-          }
-          ctx.stroke();
-        }
-
-        ctx.fillStyle = tapeState ? "#ffb000" : "#517245";
-        ctx.beginPath();
-        ctx.arc(logicalCanvasWidth - 3, targetY, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        requestAnimationFrame(renderUndulator);
-      }
-
-      function clearTape() {
-        tapePoints = [];
-      }
-
-      // 6. УПРАВЛЕНИЕ КУРСОРОМ И БЛОКИРОВКАМИ ТРЕНАЖЕРА
-      function setTrainerLocked(isLocked) {
-        var cells = document.querySelectorAll(".group-cell");
-        for (var i = 0; i < cells.length; i++) {
-          var inp = cells[i].querySelector(".group-input-val");
-          var disp = cells[i].querySelector(".group-chars-display");
-          if (isLocked) {
-            cells[i].className = cells[i].className.replace(/\blocked\b/g, "").trim() + " locked";
-            if (inp) inp.style.display = "none";
-            if (disp) {
-              disp.style.display = "flex";
-              disp.innerHTML = "";
-              var cleanVal = cleanMorseChars(inp ? inp.value : "");
-              for (var c = 0; c < cleanVal.length; c++) {
-                var span = document.createElement("span");
-                span.className = "char-slot";
-                span.textContent = cleanVal[c];
-                disp.appendChild(span);
-              }
-            }
-          } else {
-            cells[i].className = cells[i].className.replace(/\blocked\b/g, "").trim();
-            if (inp) inp.style.display = "block";
-            if (disp) disp.style.display = "none";
-          }
-        }
-
-        document.getElementById("customCharset").disabled = isLocked;
-        document.getElementById("accentCharset").disabled = isLocked;
-        document.getElementById("groupLength").disabled = isLocked;
-        document.getElementById("numGroups").disabled = isLocked;
-        document.getElementById("groupRepeat").disabled = isLocked;
-        document.getElementById("btnGenGroups").disabled = isLocked;
-
-        var badges = document.querySelectorAll(".preset-badge");
-        for (var b = 0; b < badges.length; b++) {
-          if (isLocked) badges[b].className += " disabled";
-          else badges[b].className = badges[b].className.replace(/\bdisabled\b/g, "").trim();
-        }
-      }
-
-      function highlightGroup(gIdx) {
-        var cells = document.querySelectorAll(".group-cell");
-        for (var i = 0; i < cells.length; i++) {
-          if (i === gIdx) {
-            cells[i].className += " active-group";
-            try {
-              cells[i].scrollIntoView({ behavior: "smooth", block: "nearest" });
-            } catch (e) {
-              cells[i].scrollIntoView(true);
-            }
-          } else {
-            cells[i].className = cells[i].className.replace(/\bactive-group\b/g, "").trim();
-          }
-        }
-      }
-
-      function highlightChar(gIdx, cIdx) {
-        var cell = document.getElementById("grp-cell-" + gIdx);
-        if (!cell) return;
-        var slots = cell.querySelectorAll(".char-slot");
-        for (var i = 0; i < slots.length; i++) {
-          if (i === cIdx) {
-            slots[i].className = "char-slot active-char";
-          } else if (i < cIdx) {
-            slots[i].className = "char-slot past-char";
-          } else {
-            slots[i].className = "char-slot";
-          }
-        }
-      }
-
-      function releaseCharHighlight(gIdx, cIdx) {
-        var cell = document.getElementById("grp-cell-" + gIdx);
-        if (!cell) return;
-        var slots = cell.querySelectorAll(".char-slot");
-        if (slots[cIdx]) {
-          slots[cIdx].className = "char-slot past-char";
-        }
-      }
-
-      function clearAllHighlights() {
-        var slots = document.querySelectorAll(".char-slot");
-        for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
-        var cells = document.querySelectorAll(".group-cell");
-        for (var j = 0; j < cells.length; j++) {
-          cells[j].className = cells[j].className.replace(/\bactive-group\b/g, "").trim();
-        }
-      }
-
-      // 7. ДИНАМИЧЕСКИЙ ПРИЕМ (СКОРОСТЬ И 3 ПОЛЗУНКА)
-      var rxActiveGeneration = 0;
-      var targetRadiogram = "";
-
-      function sleepRx(ms) {
-        var gen = rxActiveGeneration;
-        return workerSleep(ms).then(function () {
-          if (!rxActive || gen !== rxActiveGeneration) throw new Error("STOPPED");
-        });
-      }
-
-      function getLiveAtomTimings() {
-        var charSpd = parseInt(document.getElementById("rngCharSpeed").value, 10) || 70;
-        var farnSpd = Math.min(charSpd, parseInt(document.getElementById("rngFarnSpeed").value, 10) || 50);
-        var grpMult = (parseFloat(document.getElementById("rngGroupPause").value) || 10) / 10.0;
-
-        var dotMs = 6000.0 / charSpd;
-        var farnDotMs = 6000.0 / farnSpd;
-
-        return {
-          dotMs: dotMs,
-          dashMs: dotMs * 3,
-          elemPauseMs: dotMs,
-          charPauseMs: Math.max(0, farnDotMs * 3 - dotMs),
-          groupPauseMs: Math.max(0, (farnDotMs * 7 * grpMult) - dotMs)
-        };
-      }
-
-      function playRadiogramProcess(groups, repeats) {
-        var preamble = [".", ".", ".", "-"];
-        var pIdx = 0;
-
-        function playPreamble() {
-          if (pIdx >= preamble.length || !rxActive) return Promise.resolve();
-          var p = preamble[pIdx++];
-          var t = getLiveAtomTimings();
-          toneOn("RX");
-          return sleepRx(p === "." ? t.dotMs : t.dashMs).then(function () {
-            toneOff("RX");
-            return sleepRx(t.elemPauseMs);
-          }).then(playPreamble);
-        }
-
-        return playPreamble().then(function () {
-          return sleepRx(600);
-        }).then(function () {
-          var g = 0;
-          function nextGroup() {
-            if (g >= groups.length || !rxActive) return Promise.resolve();
-            var grp = groups[g];
-            var r = 0;
-
-            function nextRepeat() {
-              if (r >= repeats || !rxActive) {
-                g++;
-                return nextGroup();
-              }
-              highlightGroup(g);
-              var cell = document.getElementById("grp-cell-" + g);
-              if (cell) {
-                var slots = cell.querySelectorAll(".char-slot");
-                for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
-              }
-
-              var c = 0;
-              function nextChar() {
-                if (c >= grp.length || !rxActive) {
-                  var t = getLiveAtomTimings();
-                  return sleepRx(t.groupPauseMs).then(function () {
-                    r++;
-                    return nextRepeat();
-                  });
-                }
-                highlightChar(g, c);
-                var code = MORSE_MAP[grp[c]];
-
-                var s = 0;
-                function nextSymbol() {
-                  if (!code || s >= code.length || !rxActive) {
-                    releaseCharHighlight(g, c);
-                    var t = getLiveAtomTimings();
-                    return sleepRx(t.charPauseMs).then(function () {
-                      c++;
-                      return nextChar();
-                    });
-                  }
-                  var t = getLiveAtomTimings();
-                  toneOn("RX");
-                  return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-                    toneOff("RX");
-                    return sleepRx(t.elemPauseMs);
-                  }).then(function () {
-                    s++;
-                    return nextSymbol();
-                  });
-                }
-                return nextSymbol();
-              }
-              return nextChar();
-            }
-            return nextRepeat();
-          }
-          return nextGroup();
-        });
-      }
-
-      document.getElementById("btnRxStart").onclick = function () {
-        if (!validateInputs()) return;
-        var groups = getGroupsFromTable();
-        if (groups.length === 0) return;
-
-        initAudio();
-        rxActive = true;
-        rxActiveGeneration++;
-        setTrainerLocked(true);
-        applyAudioParamsNow();
-
-        document.getElementById("btnRxStart").disabled = true;
-        document.getElementById("btnRxStop").disabled = false;
-        document.getElementById("diffBox").style.display = "none";
-        setUiText("examReport", "");
-        document.getElementById("txtUserInput").value = "";
-        document.getElementById("txtUserInput").focus();
-
-        var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
-        var fullList = [];
-        for (var i = 0; i < groups.length; i++) {
-          for (var r = 0; r < repeats; r++) fullList.push(groups[i]);
-        }
-        targetRadiogram = fullList.join(" ");
-
-        function cleanup() {
-          rxActive = false;
-          toneOff("RX");
-          applyAudioParamsNow();
-          clearAllHighlights();
-          setTrainerLocked(false);
-          document.getElementById("btnRxStart").disabled = false;
-          document.getElementById("btnRxStop").disabled = true;
-        }
-
-        playRadiogramProcess(groups, repeats).then(cleanup, cleanup);
-      };
-
-      document.getElementById("btnRxStop").onclick = function () {
-        rxActive = false;
-        rxActiveGeneration++;
+      var t = getLiveAtomTimings();
+      toneOn("RX");
+      return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
         toneOff("RX");
-        applyAudioParamsNow();
-        clearAllHighlights();
-        setTrainerLocked(false);
-        document.getElementById("btnRxStart").disabled = false;
-        document.getElementById("btnRxStop").disabled = true;
-      };
+        return sleepRx(t.elemPauseMs);
+      }).then(function () {
+        s++;
+        return nextSym();
+      });
+    }
 
-      // 8. ПОЛНАЯ ВАЛИДАЦИЯ И ГЕНЕРАТОР ГРУПП (0, 1, 100, отрицательные)
-      function validateInputs() {
-        var errBox = document.getElementById("teacherErrorBox");
-        var startBtn = document.getElementById("btnRxStart");
-        var accInput = document.getElementById("accentCharset");
-        var targetLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+    return nextSym().then(playPreambleChain);
+  }
 
-        // 1. Проверка набора символов
-        var rawChars = cleanMorseChars(document.getElementById("customCharset").value);
-        var uniqueChars = [];
-        for (var i = 0; i < rawChars.length; i++) {
-          if (uniqueChars.indexOf(rawChars[i]) === -1) uniqueChars.push(rawChars[i]);
+  return playPreambleChain().then(function () {
+    // Пауза перед началом передачи радиограммы после зачина
+    if (preambleCodes.length > 0 && rxActive) {
+      return sleepRx(1200);
+    }
+  }).then(function () {
+    var g = 0;
+    function nextGroup() {
+      if (g >= groups.length || !rxActive) return Promise.resolve();
+      var grp = groups[g], r = 0;
+      function nextRepeat() {
+        if (r >= repeats || !rxActive) { g++; return nextGroup(); }
+        highlightGroup(g);
+        var cell = document.getElementById("grp-cell-" + g);
+        if (cell) {
+          var slots = cell.querySelectorAll(".char-slot");
+          for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
         }
-
-        if (uniqueChars.length === 0) {
-          errBox.style.display = "block";
-          errBox.innerHTML = "ВНИМАНИЕ: Набор знаков пуст. Выберите профиль или введите символы.";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        // 2. Проверка приоритетных символов
-        var rawAcc = cleanMorseChars(document.getElementById("accentCharset").value);
-        var uniqueAcc = [];
-        for (var j = 0; j < rawAcc.length; j++) {
-          if (uniqueAcc.indexOf(rawAcc[j]) === -1) uniqueAcc.push(rawAcc[j]);
-        }
-
-        var invalidAccChars = [];
-        for (var k = 0; k < uniqueAcc.length; k++) {
-          if (uniqueChars.indexOf(uniqueAcc[k]) === -1) invalidAccChars.push(uniqueAcc[k]);
-        }
-
-        if (invalidAccChars.length > 0) {
-          accInput.style.borderColor = "var(--mil-red)";
-          errBox.style.display = "block";
-          errBox.innerHTML = "НЕСООТВЕТСТВИЕ: Знаков [ <b>" + invalidAccChars.join(", ") + "</b> ] нет в основном наборе.";
-          startBtn.disabled = true;
-          return false;
-        } else {
-          accInput.style.borderColor = "#33422d";
-        }
-
-        // 3. Полная валидация числа групп
-        var numStr = ("" + document.getElementById("numGroups").value).trim();
-        if (numStr === "") {
-          errBox.style.display = "block";
-          errBox.innerHTML = "ОШИБКА: Поле «Число групп» не заполнено. Допустимо от 0 до 100.";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        var numGroupsVal = parseInt(numStr, 10);
-        if (isNaN(numGroupsVal)) {
-          errBox.style.display = "block";
-          errBox.innerHTML = "ОШИБКА: Число групп должно быть целым числом.";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        if (numGroupsVal < 0) {
-          errBox.style.display = "block";
-          errBox.innerHTML = "ОШИБКА: Число групп не может быть отрицательным (" + numGroupsVal + "). Введите значение от 0 до 100.";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        if (numGroupsVal > 100) {
-          errBox.style.display = "block";
-          errBox.innerHTML = "ОШИБКА: Превышен лимит (максимум 100 групп, введено: " + numGroupsVal + ").";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        if (numGroupsVal === 0) {
-          errBox.style.display = "none";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        // 4. Проверка полноты символов в созданных группах
-        var groupInputs = document.querySelectorAll(".group-input-val");
-        var emptyGroupFound = false;
-        var brokenIndex = -1;
-
-        for (var g = 0; g < groupInputs.length; g++) {
-          var cell = groupInputs[g].closest(".group-cell");
-          var val = cleanMorseChars(groupInputs[g].value);
-          if (val.length < targetLen) {
-            emptyGroupFound = true;
-            if (brokenIndex === -1) brokenIndex = g + 1;
-            if (cell) cell.className += " cell-error";
-          } else {
-            if (cell) cell.className = cell.className.replace(/\bcell-error\b/g, "").trim();
+        var c = 0;
+        function nextChar() {
+          if (c >= grp.length || !rxActive) {
+            var t = getLiveAtomTimings();
+            return sleepRx(t.groupPauseMs).then(function () { r++; return nextRepeat(); });
           }
-        }
-
-        if (emptyGroupFound) {
-          errBox.style.display = "block";
-          errBox.innerHTML = "НАРУШЕНИЕ СТРУКТУРЫ: Группа №" + brokenIndex + " содержит менее " + targetLen + " знаков.";
-          startBtn.disabled = true;
-          return false;
-        }
-
-        errBox.style.display = "none";
-        if (!rxActive) startBtn.disabled = false;
-        return true;
-      }
-
-      var groupsHidden = false;
-      function toggleHideGroups() {
-        groupsHidden = !groupsHidden;
-        var container = document.getElementById("groupsContainer");
-        var lbl = document.getElementById("lblHideGroups");
-        if (groupsHidden) {
-          container.style.opacity = "0.05";
-          setUiText(lbl, "Показать радиограмму");
-        } else {
-          container.style.opacity = "1";
-          setUiText(lbl, "Скрыть от оператора");
-        }
-      }
-
-      function uiGenerateGroupsTable() {
-        if (rxActive) return;
-        var container = document.getElementById("groupsContainer");
-        var errBox = document.getElementById("teacherErrorBox");
-        var startBtn = document.getElementById("btnRxStart");
-
-        var numStr = ("" + document.getElementById("numGroups").value).trim();
-        if (numStr === "") {
-          container.innerHTML = "";
-          validateInputs();
-          return;
-        }
-
-        var grpCount = parseInt(numStr, 10);
-        if (isNaN(grpCount) || grpCount < 0) {
-          container.innerHTML = "";
-          validateInputs();
-          return;
-        }
-
-        if (grpCount === 0) {
-          container.innerHTML = '<div style="padding:15px; color:var(--mil-dim); font-size:11px; width:100%; text-align:center;">БЛАНК РАДИОГРАММЫ ПУСТ (ЧИСЛО ГРУПП: 0)</div>';
-          validateInputs();
-          return;
-        }
-
-        if (grpCount > 100) {
-          container.innerHTML = "";
-          validateInputs();
-          return;
-        }
-
-        var raw = cleanMorseChars(document.getElementById("customCharset").value);
-        var uniqueChars = [];
-        for (var i = 0; i < raw.length; i++) {
-          if (uniqueChars.indexOf(raw[i]) === -1) uniqueChars.push(raw[i]);
-        }
-
-        if (!uniqueChars.length) {
-          container.innerHTML = "";
-          validateInputs();
-          return;
-        }
-
-        var rawAcc = cleanMorseChars(document.getElementById("accentCharset").value);
-        var uniqueAcc = [];
-        for (var j = 0; j < rawAcc.length; j++) {
-          if (uniqueAcc.indexOf(rawAcc[j]) === -1) uniqueAcc.push(rawAcc[j]);
-        }
-        var validAccents = [];
-        for (var k = 0; k < uniqueAcc.length; k++) {
-          if (uniqueChars.indexOf(uniqueAcc[k]) !== -1) validAccents.push(uniqueAcc[k]);
-        }
-
-        var pool = [];
-        for (var u = 0; u < uniqueChars.length; u++) {
-          var ch = uniqueChars[u];
-          var weight = validAccents.indexOf(ch) !== -1 ? 3 : 1;
-          for (var w = 0; w < weight; w++) pool.push(ch);
-        }
-
-        var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
-
-        container.innerHTML = "";
-
-        for (var g = 0; g < grpCount; g++) {
-          var grp = "";
-          var lastChar = "";
-          var repCount = 0;
-
-          for (var c = 0; c < grpLen; c++) {
-            var candidate;
-            var attempts = 0;
-            do {
-              candidate = pool[Math.floor(Math.random() * pool.length)];
-              attempts++;
-            } while (candidate === lastChar && repCount >= 2 && attempts < 15);
-
-            if (candidate === lastChar) repCount++;
-            else {
-              lastChar = candidate;
-              repCount = 1;
+          highlightChar(g, c);
+          var code = MORSE_MAP[grp[c]], s = 0;
+          function nextSymbol() {
+            if (!code || s >= code.length || !rxActive) {
+              releaseCharHighlight(g, c);
+              var t = getLiveAtomTimings();
+              return sleepRx(t.charPauseMs).then(function () { c++; return nextChar(); });
             }
-            grp += candidate;
+            var t = getLiveAtomTimings();
+            toneOn("RX");
+            return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
+              toneOff("RX");
+              return sleepRx(t.elemPauseMs);
+            }).then(function () { s++; return nextSymbol(); });
           }
-
-          var cell = document.createElement("div");
-          cell.className = "group-cell";
-          cell.id = "grp-cell-" + g;
-          cell.innerHTML =
-            '<span class="group-cell-idx">№' + (g + 1) + "</span>" +
-            '<input type="text" class="group-input-val" value="' + grp + '" maxlength="' + grpLen + '" oninput="validateInputs()">' +
-            '<div class="group-chars-display"></div>';
-          container.appendChild(cell);
+          return nextSymbol();
         }
+        return nextChar();
+      }
+      return nextRepeat();
+    }
+    return nextGroup();
+  });
+}
+
+document.getElementById("btnRxStart").onclick = function () {
+  if (!validateInputs()) return;
+  var groups = getGroupsFromTable();
+  if (groups.length === 0) return;
+
+  initAudio();
+  rxActive = true;
+  rxActiveGeneration++;
+  setTrainerLocked(true);
+  applyAudioParamsNow();
+
+  document.getElementById("btnRxStart").disabled = true;
+  document.getElementById("btnRxStop").disabled = false;
+  document.getElementById("diffBox").style.display = "none";
+  setUiText("examReport", "");
+  document.getElementById("txtUserInput").value = "";
+  document.getElementById("txtUserInput").focus();
+
+  var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
+  var fullList = [];
+  for (var i = 0; i < groups.length; i++) {
+    for (var r = 0; r < repeats; r++) fullList.push(groups[i]);
+  }
+  targetRadiogram = fullList.join(" ");
+
+  function cleanup() {
+    rxActive = false;
+    toneOff("RX");
+    applyAudioParamsNow();
+    clearAllHighlights();
+    setTrainerLocked(false);
+    document.getElementById("btnRxStart").disabled = false;
+    document.getElementById("btnRxStop").disabled = true;
+  }
+  playRadiogramProcess(groups, repeats).then(cleanup, cleanup);
+};
+
+document.getElementById("btnRxStop").onclick = function () {
+  rxActive = false;
+  rxActiveGeneration++;
+  toneOff("RX");
+  applyAudioParamsNow();
+  clearAllHighlights();
+  setTrainerLocked(false);
+  document.getElementById("btnRxStart").disabled = false;
+  document.getElementById("btnRxStop").disabled = true;
+};
+
+function validateInputs() {
+  var errBox = document.getElementById("teacherErrorBox");
+  var startBtn = document.getElementById("btnRxStart");
+  var accInput = document.getElementById("accentCharset");
+  var targetLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+
+  var rawChars = cleanMorseChars(document.getElementById("customCharset").value);
+  var uniqueChars = [];
+  for (var i = 0; i < rawChars.length; i++) {
+    if (uniqueChars.indexOf(rawChars[i]) === -1) uniqueChars.push(rawChars[i]);
+  }
+
+  if (uniqueChars.length === 0) {
+    errBox.style.display = "block";
+    errBox.innerHTML = "ВНИМАНИЕ: Набор знаков пуст. Выберите профиль или введите символы.";
+    startBtn.disabled = true;
+    return false;
+  }
+
+  var rawAcc = cleanMorseChars(document.getElementById("accentCharset").value);
+  var uniqueAcc = [];
+  for (var j = 0; j < rawAcc.length; j++) {
+    if (uniqueAcc.indexOf(rawAcc[j]) === -1) uniqueAcc.push(rawAcc[j]);
+  }
+
+  var invalidAccChars = [];
+  for (var k = 0; k < uniqueAcc.length; k++) {
+    if (uniqueChars.indexOf(uniqueAcc[k]) === -1) invalidAccChars.push(uniqueAcc[k]);
+  }
+
+  if (invalidAccChars.length > 0) {
+    accInput.style.borderColor = "var(--mil-red)";
+    errBox.style.display = "block";
+    errBox.innerHTML = "НЕСООТВЕТСТВИЕ: Знаков [ <b>" + invalidAccChars.join(", ") + "</b> ] нет в основном наборе.";
+    startBtn.disabled = true;
+    return false;
+  } else {
+    accInput.style.borderColor = "#33422d";
+  }
+
+  var groupInputs = document.querySelectorAll(".group-input-val");
+  if (groupInputs.length === 0) {
+    errBox.style.display = "none";
+    startBtn.disabled = true;
+    return false;
+  }
+
+  var emptyGroupFound = false, brokenIndex = -1;
+  for (var g = 0; g < groupInputs.length; g++) {
+    var cell = findAncestor(groupInputs[g], "group-cell");
+    var val = cleanMorseChars(groupInputs[g].value);
+    if (val.length < targetLen) {
+      emptyGroupFound = true;
+      if (brokenIndex === -1) brokenIndex = g + 1;
+      if (cell) cell.className += " cell-error";
+    } else {
+      if (cell) cell.className = cell.className.replace(/\bcell-error\b/g, "").trim();
+    }
+  }
+
+  if (emptyGroupFound) {
+    errBox.style.display = "block";
+    errBox.innerHTML = "НАРУШЕНИЕ СТРУКТУРЫ: Группа №" + brokenIndex + " содержит менее " + targetLen + " знаков.";
+    startBtn.disabled = true;
+    return false;
+  }
+
+  errBox.style.display = "none";
+  if (!rxActive) startBtn.disabled = false;
+  return true;
+}
+
+var groupsHidden = false;
+function toggleHideGroups() {
+  groupsHidden = !groupsHidden;
+  var container = document.getElementById("groupsContainer");
+  var lbl = document.getElementById("lblHideGroups");
+  if (groupsHidden) {
+    container.style.opacity = "0.05";
+    setUiText(lbl, "Показать радиограмму");
+  } else {
+    container.style.opacity = "1";
+    setUiText(lbl, "Скрыть от оператора");
+  }
+}
+
+function attachGroupInputEvents(inp, gIdx) {
+  attachShortZeroHandler(inp); // Подключение ввода короткого нуля 0 + -
+
+  inp.oninput = function () {
+    this.value = cleanMorseChars(this.value);
+    validateInputs();
+  };
+
+  inp.onkeydown = function (e) {
+    var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+    var kc = e.keyCode || e.which;
+
+    if (kc === 13 || kc === 32) {
+      if (e.preventDefault) e.preventDefault();
+      var val = cleanMorseChars(this.value);
+      if (val.length === 1) {
+        ensureCharInCharset(val);
+        var full = "";
+        for (var i = 0; i < grpLen; i++) full += val;
+        this.value = full;
+      }
+      validateInputs();
+
+      var allInputs = document.querySelectorAll(".group-input-val");
+      var currentIndex = -1;
+      for (var k = 0; k < allInputs.length; k++) {
+        if (allInputs[k] === this) { currentIndex = k; break; }
+      }
+
+      if (currentIndex > -1 && currentIndex < allInputs.length - 1) {
+        allInputs[currentIndex + 1].focus();
+        allInputs[currentIndex + 1].select();
+      } else if (currentIndex === allInputs.length - 1) {
+        if (allInputs.length < 100) addNewEmptyGroup();
+      }
+    }
+
+    if (kc === 8 && this.value === "") {
+      var inputs = document.querySelectorAll(".group-input-val");
+      if (inputs.length > 1) {
+        if (e.preventDefault) e.preventDefault();
+        var prevIdx = -1;
+        for (var p = 0; p < inputs.length; p++) {
+          if (inputs[p] === this) { prevIdx = p - 1; break; }
+        }
+        var cell = findAncestor(this, "group-cell");
+        if (cell && cell.parentNode) cell.parentNode.removeChild(cell);
+        reindexCells();
+        var updatedInputs = document.querySelectorAll(".group-input-val");
+        document.getElementById("numGroups").value = updatedInputs.length;
+        if (prevIdx >= 0 && updatedInputs[prevIdx]) updatedInputs[prevIdx].focus();
         validateInputs();
       }
+    }
+  };
+}
 
-      function getGroupsFromTable() {
-        var inputs = document.querySelectorAll(".group-input-val");
-        var list = [];
-        for (var i = 0; i < inputs.length; i++) {
-          list.push(cleanMorseChars(inputs[i].value));
+function reindexCells() {
+  var cells = document.querySelectorAll(".group-cell:not(.group-cell-add)");
+  for (var i = 0; i < cells.length; i++) {
+    cells[i].id = "grp-cell-" + i;
+    var idxLabel = cells[i].querySelector(".group-cell-idx");
+    if (idxLabel) idxLabel.textContent = "№" + (i + 1);
+  }
+}
+
+function renderGroupsFromList(groupsList) {
+  var container = document.getElementById("groupsContainer");
+  container.innerHTML = "";
+  var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+
+  for (var g = 0; g < groupsList.length; g++) {
+    var cell = document.createElement("div");
+    cell.className = "group-cell";
+    cell.id = "grp-cell-" + g;
+    cell.innerHTML =
+      '<span class="group-cell-idx">№' + (g + 1) + "</span>" +
+      '<input type="text" class="group-input-val" value="' + groupsList[g] + '" maxlength="' + grpLen + '">' +
+      '<div class="group-chars-display"></div>';
+    var inp = cell.querySelector(".group-input-val");
+    attachGroupInputEvents(inp, g);
+    container.appendChild(cell);
+  }
+
+  var addBtn = document.createElement("div");
+  addBtn.className = "group-cell group-cell-add";
+  addBtn.id = "cellAddGroup";
+  addBtn.title = "Добавить новую группу";
+  addBtn.onclick = addNewEmptyGroup;
+  addBtn.innerHTML = '<span class="add-icon">+</span><span class="add-text">НОВАЯ</span>';
+  container.appendChild(addBtn);
+}
+
+function addNewEmptyGroup() {
+  if (rxActive) return;
+  var currentGroups = getGroupsFromTable();
+  if (currentGroups.length >= 100) {
+    alert("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100.");
+    return;
+  }
+  currentGroups.push("");
+  document.getElementById("numGroups").value = currentGroups.length;
+  renderGroupsFromList(currentGroups);
+  validateInputs();
+  var inputs = document.querySelectorAll(".group-input-val");
+  if (inputs.length > 0) inputs[inputs.length - 1].focus();
+}
+
+function insertMonoGroupFromPanel() {
+  if (rxActive) return;
+  var input = document.getElementById("monoCharInput");
+  var countSel = document.getElementById("monoCharCount");
+  var ch = cleanMorseChars(input.value);
+
+  if (!ch || ch.length === 0) { input.focus(); return; }
+
+  var count = parseInt(countSel.value, 10) || 1;
+  var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+  var currentGroups = getGroupsFromTable();
+
+  if (currentGroups.length + count > 100) {
+    alert("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100 (сейчас: " + currentGroups.length + ").");
+    return;
+  }
+
+  ensureCharInCharset(ch);
+
+  var monoStr = "";
+  for (var i = 0; i < grpLen; i++) monoStr += ch;
+  for (var k = 0; k < count; k++) currentGroups.push(monoStr);
+
+  document.getElementById("numGroups").value = currentGroups.length;
+  renderGroupsFromList(currentGroups);
+  validateInputs();
+
+  input.value = "";
+  input.focus();
+  var container = document.getElementById("groupsContainer");
+  container.scrollTop = container.scrollHeight;
+}
+
+function uiGenerateGroupsTable() {
+  if (rxActive) return;
+  var container = document.getElementById("groupsContainer");
+  var numStr = ("" + document.getElementById("numGroups").value).trim();
+  if (numStr === "") { container.innerHTML = ""; validateInputs(); return; }
+
+  var grpCount = parseInt(numStr, 10);
+  if (isNaN(grpCount) || grpCount < 0) { container.innerHTML = ""; validateInputs(); return; }
+  if (grpCount === 0) {
+    container.innerHTML = '<div style="padding:15px;color:var(--mil-dim);font-size:11px;width:100%;text-align:center">БЛАНК РАДИОГРАММЫ ПУСТ (ЧИСЛО ГРУПП: 0)</div>';
+    validateInputs();
+    return;
+  }
+  if (grpCount > 100) { container.innerHTML = ""; validateInputs(); return; }
+
+  var raw = cleanMorseChars(document.getElementById("customCharset").value);
+  var uniqueChars = [];
+  for (var i = 0; i < raw.length; i++) {
+    if (uniqueChars.indexOf(raw[i]) === -1) uniqueChars.push(raw[i]);
+  }
+  if (!uniqueChars.length) { container.innerHTML = ""; validateInputs(); return; }
+
+  var rawAcc = cleanMorseChars(document.getElementById("accentCharset").value);
+  var uniqueAcc = [];
+  for (var j = 0; j < rawAcc.length; j++) {
+    if (uniqueAcc.indexOf(rawAcc[j]) === -1) uniqueAcc.push(rawAcc[j]);
+  }
+  var validAccents = [];
+  for (var k = 0; k < uniqueAcc.length; k++) {
+    if (uniqueChars.indexOf(uniqueAcc[k]) !== -1) validAccents.push(uniqueAcc[k]);
+  }
+
+  var pool = [];
+  for (var u = 0; u < uniqueChars.length; u++) {
+    var ch = uniqueChars[u];
+    var weight = validAccents.indexOf(ch) !== -1 ? 3 : 1;
+    for (var w = 0; w < weight; w++) pool.push(ch);
+  }
+
+  var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+  var generatedList = [];
+
+  for (var g = 0; g < grpCount; g++) {
+    var grp = "", lastChar = "", repCount = 0;
+    for (var c = 0; c < grpLen; c++) {
+      var candidate, attempts = 0;
+      do {
+        candidate = pool[Math.floor(Math.random() * pool.length)];
+        attempts++;
+      } while (candidate === lastChar && repCount >= 2 && attempts < 15);
+
+      if (candidate === lastChar) repCount++;
+      else { lastChar = candidate; repCount = 1; }
+      grp += candidate;
+    }
+    generatedList.push(grp);
+  }
+
+  renderGroupsFromList(generatedList);
+  validateInputs();
+}
+
+function getGroupsFromTable() {
+  var inputs = document.querySelectorAll(".group-input-val");
+  var list = [];
+  for (var i = 0; i < inputs.length; i++) list.push(cleanMorseChars(inputs[i].value));
+  return list;
+}
+
+function setPreset(chars) {
+  if (rxActive) return;
+  var customField = document.getElementById("customCharset");
+  customField.value = chars;
+  document.getElementById("accentCharset").value = "";
+  autoGrow(customField);
+  autoGrow(document.getElementById("accentCharset"));
+  uiGenerateGroupsTable();
+}
+
+function clearAllTrainer() {
+  if (rxActive) return;
+  var inp = document.getElementById("customCharset");
+  inp.value = "";
+  document.getElementById("accentCharset").value = "";
+  document.getElementById("groupsContainer").innerHTML = "";
+  document.getElementById("txtUserInput").value = "";
+  document.getElementById("diffBox").style.display = "none";
+  setUiText("examReport", "");
+  autoGrow(inp);
+  autoGrow(document.getElementById("accentCharset"));
+  validateInputs();
+  inp.focus();
+}
+
+function alignSequences(orig, user) {
+  var n = orig.length, m = user.length;
+  var dp = [];
+  for (var i = 0; i <= n; i++) {
+    dp[i] = [];
+    for (var j = 0; j <= m; j++) dp[i][j] = 0;
+    dp[i][0] = i;
+  }
+  for (var col = 0; col <= m; col++) dp[0][col] = col;
+
+  for (var r = 1; r <= n; r++) {
+    for (var c = 1; c <= m; c++) {
+      var cost = orig[r - 1] === user[c - 1] ? 0 : 1;
+      dp[r][c] = Math.min(dp[r - 1][c] + 1, dp[r][c - 1] + 1, dp[r - 1][c - 1] + cost);
+    }
+  }
+
+  var curR = n, curC = m;
+  var alignedOrig = [], alignedUser = [];
+  while (curR > 0 || curC > 0) {
+    if (curR > 0 && curC > 0 && dp[curR][curC] === dp[curR - 1][curC - 1] + (orig[curR - 1] === user[curC - 1] ? 0 : 1)) {
+      alignedOrig.push(orig[curR - 1]);
+      alignedUser.push(user[curC - 1]);
+      curR--; curC--;
+    } else if (curR > 0 && dp[curR][curC] === dp[curR - 1][curC] + 1) {
+      alignedOrig.push(orig[curR - 1]);
+      alignedUser.push("_");
+      curR--;
+    } else {
+      alignedOrig.push("");
+      alignedUser.push(user[curC - 1]);
+      curC--;
+    }
+  }
+  return { alignedOrig: alignedOrig.reverse(), alignedUser: alignedUser.reverse() };
+}
+
+document.getElementById("btnRxCheck").onclick = function () {
+  if (!targetRadiogram) {
+    alert("ПЕРЕДАЧА НЕ ВЫПОЛНЯЛАСЬ. НАЖМИТЕ «ПУСК ПРИЁМА».");
+    return;
+  }
+
+  var cleanOrig = cleanMorseChars(targetRadiogram);
+  var cleanUser = cleanMorseChars(document.getElementById("txtUserInput").value);
+  var alignResult = alignSequences(cleanOrig, cleanUser);
+  var alignedOrig = alignResult.alignedOrig;
+  var alignedUser = alignResult.alignedUser;
+
+  var diffHtml = "", errors = 0, validCharCount = 0;
+  var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+
+  for (var k = 0; k < alignedOrig.length; k++) {
+    var o = alignedOrig[k], u = alignedUser[k];
+    if (o === u) {
+      diffHtml += '<span class="char-ok">' + u + "</span>";
+    } else {
+      errors++;
+      if (o === "") diffHtml += '<span class="char-err">' + u + "[+]</span>";
+      else if (u === "_") diffHtml += '<span class="char-err">_[' + o + "]</span>";
+      else diffHtml += '<span class="char-err">' + u + "[" + o + "]</span>";
+    }
+    if (o !== "") validCharCount++;
+    if (validCharCount > 0 && validCharCount % grpLen === 0 && o !== "") diffHtml += " ";
+  }
+
+  var diffBox = document.getElementById("diffBox");
+  diffBox.innerHTML = "<b>РЕЗУЛЬТАТ КОНТРОЛЬНОЙ СВЕРКИ:</b><br>" + diffHtml;
+  diffBox.style.display = "block";
+
+  var total = cleanOrig.length;
+  var percent = Math.max(0, Math.round(((total - errors) / total) * 100));
+  var mark = "НЕУДОВЛЕТВОРИТЕЛЬНО (2)";
+  if (errors <= 1) mark = "ОТЛИЧНО (5)";
+  else if (errors <= 3) mark = "ХОРОШО (4)";
+  else if (errors <= 5) mark = "УДОВЛЕТВОРИТЕЛЬНО (3)";
+
+  setUiText("examReport", "ИТОГ: ПРИНЯТО ВЕРНО " + Math.max(0, total - errors) + " ИЗ " + total + " (" + percent + "%). ОШИБОК: " + errors + ". ОЦЕНКА: " + mark);
+};
+
+var currentKeyerMode = "straight", currentIambicSource = "KEYS";
+
+function switchIambicInputSource(src) {
+  currentIambicSource = src;
+  resetIambicHardware();
+  var vPaddle = document.getElementById("virtualPaddle");
+  var mousePad = document.getElementById("mousePadZone");
+  if (currentKeyerMode === "iambic") {
+    if (src === "MOUSE") { vPaddle.style.display = "none"; mousePad.style.display = "block"; }
+    else { vPaddle.style.display = "flex"; mousePad.style.display = "none"; }
+  }
+}
+
+function setKeyerMode(mode) {
+  currentKeyerMode = mode;
+  var btnStraight = document.getElementById("btnModeStraight");
+  var btnIambic = document.getElementById("btnModeIambic");
+  var straightParams = document.getElementById("straightKeyParams");
+  var iambicParams = document.getElementById("iambicKeyParams");
+  var virtualKey = document.getElementById("virtualKey");
+  var virtualPaddle = document.getElementById("virtualPaddle");
+  var mousePad = document.getElementById("mousePadZone");
+
+  if (mode === "straight") {
+    btnStraight.className = "keyer-mode-btn active";
+    btnIambic.className = "keyer-mode-btn";
+    straightParams.style.display = "block";
+    iambicParams.style.display = "none";
+    virtualKey.style.display = "flex";
+    virtualPaddle.style.display = "none";
+    mousePad.style.display = "none";
+  } else {
+    btnStraight.className = "keyer-mode-btn";
+    btnIambic.className = "keyer-mode-btn active";
+    straightParams.style.display = "none";
+    iambicParams.style.display = "block";
+    virtualKey.style.display = "none";
+    if (currentIambicSource === "MOUSE") { vPaddle.style.display = "none"; mousePad.style.display = "block"; }
+    else { virtualPaddle.style.display = "flex"; mousePad.style.display = "none"; }
+  }
+  clearTx();
+}
+
+var txHistory = "", currentMorseChar = "", charTimeout = null, wordTimeout = null;
+
+function updateLiveBufferDisplay() {
+  var el = document.getElementById("lblLiveMorseBuffer");
+  if (!el) return;
+  if (currentMorseChar.length > 0) {
+    var preview = REVERSE_MORSE[currentMorseChar] || "?";
+    setUiText(el, "БУФЕР СИМВОЛА: [ " + currentMorseChar + " ] -> " + preview);
+  } else {
+    setUiText(el, "БУФЕР СИМВОЛА: [ ГОТОВ ]");
+  }
+}
+
+function commitMorseLetter() {
+  if (currentMorseChar.length > 0) {
+    var rec = REVERSE_MORSE[currentMorseChar] || ("[" + currentMorseChar + "?]");
+    txHistory += rec;
+    var screen = document.getElementById("txDecoded");
+    if (screen) { setUiText(screen, txHistory); screen.scrollTop = screen.scrollHeight; }
+    currentMorseChar = "";
+    updateLiveBufferDisplay();
+  }
+}
+
+function scheduleDecoders(unitMs, isStraight) {
+  clearTimeout(charTimeout);
+  clearTimeout(wordTimeout);
+  var letterPause = isStraight ? unitMs * 3.0 : unitMs * 2.6;
+  var wordPause = isStraight ? unitMs * 7.0 : unitMs * 6.0;
+
+  charTimeout = setTimeout(function () { commitMorseLetter(); }, letterPause);
+  wordTimeout = setTimeout(function () {
+    if (txHistory.length > 0 && txHistory.charAt(txHistory.length - 1) !== " ") {
+      txHistory += " ";
+      var screen = document.getElementById("txDecoded");
+      if (screen) { setUiText(screen, txHistory); screen.scrollTop = screen.scrollHeight; }
+    }
+  }, wordPause);
+}
+
+var keyStartTime = 0, estimatedDot = 95, ALPHA = 0.28;
+
+function onStraightKeyDown() {
+  if (currentKeyerMode !== "straight" || keyStartTime !== 0) return;
+  keyStartTime = Date.now();
+  toneOn("TX");
+  var el = document.getElementById("virtualKey");
+  if (el) el.className += " pressed";
+  clearTimeout(charTimeout);
+  clearTimeout(wordTimeout);
+}
+
+function onStraightKeyUp() {
+  if (currentKeyerMode !== "straight" || keyStartTime === 0) return;
+  var duration = Date.now() - keyStartTime;
+  keyStartTime = 0;
+  toneOff("TX");
+  var el = document.getElementById("virtualKey");
+  if (el) el.className = el.className.replace(/\bpressed\b/g, "").trim();
+
+  if (duration < 25) return;
+  var threshold = estimatedDot * 1.85;
+
+  if (duration < threshold) {
+    currentMorseChar += ".";
+    estimatedDot = estimatedDot * (1 - ALPHA) + duration * ALPHA;
+  } else {
+    currentMorseChar += "-";
+    var normalizedDot = duration / 3.0;
+    estimatedDot = estimatedDot * (1 - ALPHA) + normalizedDot * ALPHA;
+  }
+
+  updateLiveBufferDisplay();
+  estimatedDot = Math.max(33, Math.min(240, estimatedDot));
+  var currentSpeed = Math.round(6000 / estimatedDot);
+  setUiText("lblTxDetected", currentSpeed + " зн/мин [АРУ-АКТИВНА]");
+  scheduleDecoders(estimatedDot, true);
+}
+
+var ditPressed = false, dahPressed = false, ditMemory = false, dahMemory = false;
+var iambicTimer = null, iambicState = "IDLE", currentSendingElement = null, lastCompletedElement = null;
+
+function getIambicUnitMs() {
+  var spd = parseInt(document.getElementById("rngIambicSpeed").value, 10) || 70;
+  return 6000.0 / Math.max(20, spd);
+}
+
+function updatePaddleVisuals() {
+  var pL = document.getElementById("paddleLeft"), pR = document.getElementById("paddleRight");
+  var padL = document.getElementById("padHalfLeft"), padR = document.getElementById("padHalfRight");
+
+  if (ditPressed) {
+    if (pL) pL.className += " pressed";
+    if (padL) padL.className += " pressed";
+  } else {
+    if (pL) pL.className = pL.className.replace(/\bpressed\b/g, "").trim();
+    if (padL) padL.className = padL.className.replace(/\bpressed\b/g, "").trim();
+  }
+
+  if (dahPressed) {
+    if (pR) pR.className += " pressed";
+    if (padR) padR.className += " pressed";
+  } else {
+    if (pR) pR.className = pR.className.replace(/\bpressed\b/g, "").trim();
+    if (padR) padR.className = padR.className.replace(/\bpressed\b/g, "").trim();
+  }
+}
+
+function startIambicIfIdle() {
+  if (iambicState !== "IDLE") return;
+  stepIambicFSM();
+}
+
+function stepIambicFSM() {
+  var unitMs = getIambicUnitMs();
+  if (iambicState === "IDLE") {
+    var nextElem = null;
+    if (ditMemory) { nextElem = "dit"; ditMemory = false; }
+    else if (dahMemory) { nextElem = "dah"; dahMemory = false; }
+    else if (ditPressed && dahPressed) { nextElem = lastCompletedElement === "dit" ? "dah" : "dit"; }
+    else if (ditPressed) { nextElem = "dit"; }
+    else if (dahPressed) { nextElem = "dah"; }
+
+    if (!nextElem) { toneOff("TX"); return; }
+
+    clearTimeout(charTimeout);
+    clearTimeout(wordTimeout);
+
+    currentSendingElement = nextElem;
+    iambicState = "SENDING_MARK";
+    currentMorseChar += nextElem === "dit" ? "." : "-";
+    updateLiveBufferDisplay();
+    toneOn("TX");
+
+    var markDuration = nextElem === "dit" ? unitMs : unitMs * 3;
+    clearTimeout(iambicTimer);
+    iambicTimer = setTimeout(stepIambicFSM, markDuration);
+  } else if (iambicState === "SENDING_MARK") {
+    toneOff("TX");
+    lastCompletedElement = currentSendingElement;
+    iambicState = "SENDING_SPACE";
+    clearTimeout(iambicTimer);
+    iambicTimer = setTimeout(stepIambicFSM, unitMs);
+  } else if (iambicState === "SENDING_SPACE") {
+    iambicState = "IDLE";
+    currentSendingElement = null;
+    if (ditPressed || dahPressed || ditMemory || dahMemory) {
+      stepIambicFSM();
+    } else {
+      scheduleDecoders(unitMs, false);
+    }
+  }
+}
+
+function triggerDitDown() {
+  clearTimeout(charTimeout); clearTimeout(wordTimeout);
+  ditPressed = true;
+  if (iambicState === "SENDING_MARK") { if (currentSendingElement === "dah") ditMemory = true; }
+  else if (iambicState === "SENDING_SPACE") { ditMemory = true; }
+  updatePaddleVisuals();
+  startIambicIfIdle();
+}
+
+function triggerDitUp() { ditPressed = false; updatePaddleVisuals(); }
+
+function triggerDahDown() {
+  clearTimeout(charTimeout); clearTimeout(wordTimeout);
+  dahPressed = true;
+  if (iambicState === "SENDING_MARK") { if (currentSendingElement === "dit") dahMemory = true; }
+  else if (iambicState === "SENDING_SPACE") { dahMemory = true; }
+  updatePaddleVisuals();
+  startIambicIfIdle();
+}
+
+function triggerDahUp() { dahPressed = false; updatePaddleVisuals(); }
+
+function resetIambicHardware() {
+  clearTimeout(iambicTimer);
+  iambicTimer = null;
+  iambicState = "IDLE";
+  currentSendingElement = null;
+  lastCompletedElement = null;
+  ditPressed = false;
+  dahPressed = false;
+  ditMemory = false;
+  dahMemory = false;
+  toneOff("TX");
+  updatePaddleVisuals();
+}
+
+function clearTx() {
+  txHistory = "";
+  currentMorseChar = "";
+  estimatedDot = 95;
+  clearTimeout(charTimeout);
+  clearTimeout(wordTimeout);
+  resetIambicHardware();
+  setUiText("txDecoded", "");
+  setUiText("lblTxDetected", "70 зн/мин [СБРОС]");
+  updateLiveBufferDisplay();
+  var el = document.getElementById("virtualKey");
+  if (el) el.className = el.className.replace(/\bpressed\b/g, "").trim();
+}
+
+function bindAction(el, downFn, upFn) {
+  if (!el) return;
+  var isDown = false;
+  el.addEventListener("mousedown", function (e) {
+    if (e.button !== 0) return;
+    if (e.preventDefault) e.preventDefault();
+    isDown = true; downFn();
+  }, false);
+
+  window.addEventListener("mouseup", function () {
+    if (isDown) { isDown = false; upFn(); }
+  }, false);
+
+  el.addEventListener("touchstart", function (e) {
+    if (e.preventDefault) e.preventDefault();
+    isDown = true; downFn();
+  }, false);
+
+  window.addEventListener("touchend", function () {
+    if (isDown) { isDown = false; upFn(); }
+  }, false);
+}
+
+bindAction(document.getElementById("virtualKey"), onStraightKeyDown, onStraightKeyUp);
+bindAction(document.getElementById("paddleLeft"), triggerDitDown, triggerDitUp);
+bindAction(document.getElementById("paddleRight"), triggerDahDown, triggerDahUp);
+
+var mousePad = document.getElementById("mousePadZone");
+mousePad.addEventListener("contextmenu", function (e) { if (e.preventDefault) e.preventDefault(); return false; });
+mousePad.addEventListener("mousedown", function (e) {
+  if (e.preventDefault) e.preventDefault();
+  if (currentKeyerMode !== "iambic" || currentIambicSource !== "MOUSE") return;
+  if (e.button === 0) triggerDitDown();
+  else if (e.button === 2) triggerDahDown();
+});
+mousePad.addEventListener("mouseup", function (e) {
+  if (e.preventDefault) e.preventDefault();
+  if (currentKeyerMode !== "iambic" || currentIambicSource !== "MOUSE") return;
+  if (e.button === 0) triggerDitUp();
+  else if (e.button === 2) triggerDahUp();
+});
+mousePad.addEventListener("mouseleave", function () {
+  if (currentIambicSource === "MOUSE") { triggerDitUp(); triggerDahUp(); }
+});
+
+var keySpacePressed = false, keyZPressed = false, keyXPressed = false;
+
+window.addEventListener("keydown", function (e) {
+  var tag = (e.target || {}).tagName;
+  if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
+
+  var kc = e.keyCode || e.which;
+  var key = (e.key || "").toLowerCase();
+
+  if (kc === 32) {
+    if (e.preventDefault) e.preventDefault();
+    if (!keySpacePressed) { keySpacePressed = true; onStraightKeyDown(); }
+  } else if (kc === 90 || key === "z" || key === "я") {
+    if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
+      if (e.preventDefault) e.preventDefault();
+      if (!keyZPressed) { keyZPressed = true; triggerDitDown(); }
+    }
+  } else if (kc === 88 || key === "x" || key === "ч") {
+    if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
+      if (e.preventDefault) e.preventDefault();
+      if (!keyXPressed) { keyXPressed = true; triggerDahDown(); }
+    }
+  }
+});
+
+window.addEventListener("keyup", function (e) {
+  var tag = (e.target || {}).tagName;
+  if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
+
+  var kc = e.keyCode || e.which;
+  var key = (e.key || "").toLowerCase();
+
+  if (kc === 32) {
+    if (e.preventDefault) e.preventDefault();
+    keySpacePressed = false; onStraightKeyUp();
+  } else if (kc === 90 || key === "z" || key === "я") {
+    if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
+      if (e.preventDefault) e.preventDefault();
+      keyZPressed = false; triggerDitUp();
+    }
+  } else if (kc === 88 || key === "x" || key === "ч") {
+    if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
+      if (e.preventDefault) e.preventDefault();
+      keyXPressed = false; triggerDahUp();
+    }
+  }
+});
+
+var isCardPlaying = false;
+function renderStudyTable() {
+  var grid = document.getElementById("studyGrid");
+  grid.innerHTML = "";
+  for (var i = 0; i < MORSE_DB.length; i++) {
+    (function (item) {
+      var c = document.createElement("div");
+      c.className = "morse-card";
+      c.innerHTML = '<div class="card-fill-gauge"></div><div class="sym">' + item.ch + '</div><div class="code">' + item.code + '</div><div class="mnemonic">' + item.mn + '</div>';
+
+      c.onclick = function () {
+        if (rxActive || isCardPlaying) return;
+        isCardPlaying = true;
+        grid.className += " cards-locked";
+        c.className += " playing";
+        initAudio();
+
+        var t = getStudyAtomTimings();
+        var gauge = c.querySelector(".card-fill-gauge");
+        var totalDurationMs = 0;
+        for (var k = 0; k < item.code.length; k++) {
+          totalDurationMs += item.code[k] === "." ? t.dotMs : t.dashMs;
+          if (k < item.code.length - 1) totalDurationMs += t.elemPauseMs;
         }
-        return list;
-      }
 
-      function setPreset(chars) {
-        if (rxActive) return;
-        var customField = document.getElementById("customCharset");
-        customField.value = chars;
-        document.getElementById("accentCharset").value = "";
-        autoGrow(customField);
-        autoGrow(document.getElementById("accentCharset"));
-        uiGenerateGroupsTable();
-      }
+        gauge.style.transition = "width " + totalDurationMs + "ms linear";
+        requestAnimationFrame(function () { gauge.style.width = "100%"; });
 
-      function clearAllTrainer() {
-        if (rxActive) return;
-        var inp = document.getElementById("customCharset");
-        inp.value = "";
-        document.getElementById("accentCharset").value = "";
-        document.getElementById("groupsContainer").innerHTML = "";
-        document.getElementById("txtUserInput").value = "";
-        document.getElementById("diffBox").style.display = "none";
-        setUiText("examReport", "");
-        autoGrow(inp);
-        autoGrow(document.getElementById("accentCharset"));
-        validateInputs();
-        inp.focus();
-      }
-
-      function alignSequences(orig, user) {
-        var n = orig.length, m = user.length;
-        var dp = [];
-        for (var i = 0; i <= n; i++) {
-          dp[i] = [];
-          for (var j = 0; j <= m; j++) dp[i][j] = 0;
-          dp[i][0] = i;
-        }
-        for (var col = 0; col <= m; col++) dp[0][col] = col;
-
-        for (var r = 1; r <= n; r++) {
-          for (var c = 1; c <= m; c++) {
-            var cost = orig[r - 1] === user[c - 1] ? 0 : 1;
-            dp[r][c] = Math.min(dp[r - 1][c] + 1, dp[r][c - 1] + 1, dp[r - 1][c - 1] + cost);
-          }
-        }
-
-        var curR = n, curC = m;
-        var alignedOrig = [], alignedUser = [];
-        while (curR > 0 || curC > 0) {
-          if (curR > 0 && curC > 0 && dp[curR][curC] === dp[curR - 1][curC - 1] + (orig[curR - 1] === user[curC - 1] ? 0 : 1)) {
-            alignedOrig.push(orig[curR - 1]);
-            alignedUser.push(user[curC - 1]);
-            curR--;
-            curC--;
-          } else if (curR > 0 && dp[curR][curC] === dp[curR - 1][curC] + 1) {
-            alignedOrig.push(orig[curR - 1]);
-            alignedUser.push("_");
-            curR--;
-          } else {
-            alignedOrig.push("");
-            alignedUser.push(user[curC - 1]);
-            curC--;
-          }
-        }
-        return {
-          alignedOrig: alignedOrig.reverse(),
-          alignedUser: alignedUser.reverse()
-        };
-      }
-
-      document.getElementById("btnRxCheck").onclick = function () {
-        if (!targetRadiogram) {
-          alert("ПЕРЕДАЧА НЕ ВЫПОЛНЯЛАСЬ. НАЖМИТЕ «ПУСК ПРИЁМА».");
-          return;
-        }
-
-        var cleanOrig = cleanMorseChars(targetRadiogram);
-        var cleanUser = cleanMorseChars(document.getElementById("txtUserInput").value);
-
-        var alignResult = alignSequences(cleanOrig, cleanUser);
-        var alignedOrig = alignResult.alignedOrig;
-        var alignedUser = alignResult.alignedUser;
-
-        var diffHtml = "";
-        var errors = 0;
-        var validCharCount = 0;
-        var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
-
-        for (var k = 0; k < alignedOrig.length; k++) {
-          var o = alignedOrig[k], u = alignedUser[k];
-          if (o === u) {
-            diffHtml += '<span class="char-ok">' + u + "</span>";
-          } else {
-            errors++;
-            if (o === "") diffHtml += '<span class="char-err">' + u + "[+]</span>";
-            else if (u === "_") diffHtml += '<span class="char-err">_[' + o + "]</span>";
-            else diffHtml += '<span class="char-err">' + u + "[" + o + "]</span>";
-          }
-          if (o !== "") validCharCount++;
-          if (validCharCount > 0 && validCharCount % grpLen === 0 && o !== "") diffHtml += " ";
-        }
-
-        var diffBox = document.getElementById("diffBox");
-        diffBox.innerHTML = "<b>РЕЗУЛЬТАТ КОНТРОЛЬНОЙ СВЕРКИ:</b><br>" + diffHtml;
-        diffBox.style.display = "block";
-
-        var total = cleanOrig.length;
-        var percent = Math.max(0, Math.round(((total - errors) / total) * 100));
-
-        var mark = "НЕУДОВЛЕТВОРИТЕЛЬНО (2)";
-        if (errors <= 1) mark = "ОТЛИЧНО (5)";
-        else if (errors <= 3) mark = "ХОРОШО (4)";
-        else if (errors <= 5) mark = "УДОВЛЕТВОРИТЕЛЬНО (3)";
-
-        setUiText(
-          "examReport",
-          "ИТОГ: ПРИНЯТО ВЕРНО " + Math.max(0, total - errors) + " ИЗ " + total + " (" + percent + "%). ОШИБОК: " + errors + ". ОЦЕНКА: " + mark
-        );
-      };
-
-      // 9. ПЕРЕДАЧА НА КЛЮЧЕ (ДЕКОДЕР СИГНАЛОВ)
-      var currentKeyerMode = "straight";
-      var currentIambicSource = "KEYS";
-
-      function switchIambicInputSource(src) {
-        currentIambicSource = src;
-        resetIambicHardware();
-        var vPaddle = document.getElementById("virtualPaddle");
-        var mousePad = document.getElementById("mousePadZone");
-
-        if (currentKeyerMode === "iambic") {
-          if (src === "MOUSE") {
-            vPaddle.style.display = "none";
-            mousePad.style.display = "block";
-          } else {
-            vPaddle.style.display = "flex";
-            mousePad.style.display = "none";
-          }
-        }
-      }
-
-      function setKeyerMode(mode) {
-        currentKeyerMode = mode;
-        var btnStraight = document.getElementById("btnModeStraight");
-        var btnIambic = document.getElementById("btnModeIambic");
-        var straightParams = document.getElementById("straightKeyParams");
-        var iambicParams = document.getElementById("iambicKeyParams");
-        var virtualKey = document.getElementById("virtualKey");
-        var virtualPaddle = document.getElementById("virtualPaddle");
-        var mousePad = document.getElementById("mousePadZone");
-
-        if (mode === "straight") {
-          btnStraight.className = "keyer-mode-btn active";
-          btnIambic.className = "keyer-mode-btn";
-          straightParams.style.display = "block";
-          iambicParams.style.display = "none";
-          virtualKey.style.display = "flex";
-          virtualPaddle.style.display = "none";
-          mousePad.style.display = "none";
-        } else {
-          btnStraight.className = "keyer-mode-btn";
-          btnIambic.className = "keyer-mode-btn active";
-          straightParams.style.display = "none";
-          iambicParams.style.display = "block";
-          virtualKey.style.display = "none";
-
-          if (currentIambicSource === "MOUSE") {
-            virtualPaddle.style.display = "none";
-            mousePad.style.display = "block";
-          } else {
-            virtualPaddle.style.display = "flex";
-            mousePad.style.display = "none";
-          }
-        }
-        clearTx();
-      }
-
-      var txHistory = "";
-      var currentMorseChar = "";
-      var charTimeout = null;
-      var wordTimeout = null;
-
-      function updateLiveBufferDisplay() {
-        var el = document.getElementById("lblLiveMorseBuffer");
-        if (!el) return;
-        if (currentMorseChar.length > 0) {
-          var preview = REVERSE_MORSE[currentMorseChar] || "?";
-          setUiText(el, "БУФЕР СИМВОЛА: [ " + currentMorseChar + " ] -> " + preview);
-        } else {
-          setUiText(el, "БУФЕР СИМВОЛА: [ ГОТОВ ]");
-        }
-      }
-
-      function commitMorseLetter() {
-        if (currentMorseChar.length > 0) {
-          var rec = REVERSE_MORSE[currentMorseChar] || ("[" + currentMorseChar + "?]");
-          txHistory += rec;
-          var screen = document.getElementById("txDecoded");
-          if (screen) {
-            setUiText(screen, txHistory);
-            screen.scrollTop = screen.scrollHeight;
-          }
-          currentMorseChar = "";
-          updateLiveBufferDisplay();
-        }
-      }
-
-      function scheduleDecoders(unitMs, isStraight) {
-        clearTimeout(charTimeout);
-        clearTimeout(wordTimeout);
-
-        var letterPause = isStraight ? unitMs * 3.0 : unitMs * 2.6;
-        var wordPause = isStraight ? unitMs * 7.0 : unitMs * 6.0;
-
-        charTimeout = setTimeout(function () {
-          commitMorseLetter();
-        }, letterPause);
-
-        wordTimeout = setTimeout(function () {
-          if (txHistory.length > 0 && txHistory.charAt(txHistory.length - 1) !== " ") {
-            txHistory += " ";
-            var screen = document.getElementById("txDecoded");
-            if (screen) {
-              setUiText(screen, txHistory);
-              screen.scrollTop = screen.scrollHeight;
-            }
-          }
-        }, wordPause);
-      }
-
-      var keyStartTime = 0;
-      var estimatedDot = 95;
-      var ALPHA = 0.28;
-
-      function onStraightKeyDown() {
-        if (currentKeyerMode !== "straight" || keyStartTime !== 0) return;
-        keyStartTime = Date.now();
-        toneOn("TX");
-        var el = document.getElementById("virtualKey");
-        if (el) el.className += " pressed";
-        clearTimeout(charTimeout);
-        clearTimeout(wordTimeout);
-      }
-
-      function onStraightKeyUp() {
-        if (currentKeyerMode !== "straight" || keyStartTime === 0) return;
-        var duration = Date.now() - keyStartTime;
-        keyStartTime = 0;
-        toneOff("TX");
-        var el = document.getElementById("virtualKey");
-        if (el) el.className = el.className.replace(/\bpressed\b/g, "").trim();
-
-        if (duration < 25) return;
-        var threshold = estimatedDot * 1.85;
-
-        if (duration < threshold) {
-          currentMorseChar += ".";
-          estimatedDot = estimatedDot * (1 - ALPHA) + duration * ALPHA;
-        } else {
-          currentMorseChar += "-";
-          var normalizedDot = duration / 3.0;
-          estimatedDot = estimatedDot * (1 - ALPHA) + normalizedDot * ALPHA;
-        }
-
-        updateLiveBufferDisplay();
-
-        estimatedDot = Math.max(33, Math.min(240, estimatedDot));
-        var currentSpeed = Math.round(6000 / estimatedDot);
-        setUiText("lblTxDetected", currentSpeed + " зн/мин [АРУ-АКТИВНА]");
-
-        scheduleDecoders(estimatedDot, true);
-      }
-
-      var ditPressed = false;
-      var dahPressed = false;
-      var ditMemory = false;
-      var dahMemory = false;
-      var iambicTimer = null;
-      var iambicState = "IDLE";
-      var currentSendingElement = null;
-      var lastCompletedElement = null;
-
-      function getIambicUnitMs() {
-        var spd = parseInt(document.getElementById("rngIambicSpeed").value, 10) || 70;
-        return 6000.0 / Math.max(20, spd);
-      }
-
-      function updatePaddleVisuals() {
-        var pL = document.getElementById("paddleLeft");
-        var pR = document.getElementById("paddleRight");
-        var padL = document.getElementById("padHalfLeft");
-        var padR = document.getElementById("padHalfRight");
-
-        if (ditPressed) {
-          if (pL) pL.className += " pressed";
-          if (padL) padL.className += " pressed";
-        } else {
-          if (pL) pL.className = pL.className.replace(/\bpressed\b/g, "").trim();
-          if (padL) padL.className = padL.className.replace(/\bpressed\b/g, "").trim();
-        }
-
-        if (dahPressed) {
-          if (pR) pR.className += " pressed";
-          if (padR) padR.className += " pressed";
-        } else {
-          if (pR) pR.className = pR.className.replace(/\bpressed\b/g, "").trim();
-          if (padR) padR.className = padR.className.replace(/\bpressed\b/g, "").trim();
-        }
-      }
-
-      function startIambicIfIdle() {
-        if (iambicState !== "IDLE") return;
-        stepIambicFSM();
-      }
-
-      function stepIambicFSM() {
-        var unitMs = getIambicUnitMs();
-
-        if (iambicState === "IDLE") {
-          var nextElem = null;
-
-          if (ditMemory) {
-            nextElem = "dit";
-            ditMemory = false;
-          } else if (dahMemory) {
-            nextElem = "dah";
-            dahMemory = false;
-          } else if (ditPressed && dahPressed) {
-            nextElem = lastCompletedElement === "dit" ? "dah" : "dit";
-          } else if (ditPressed) {
-            nextElem = "dit";
-          } else if (dahPressed) {
-            nextElem = "dah";
-          }
-
-          if (!nextElem) {
-            toneOff("TX");
+        var s = 0;
+        function nextSym() {
+          if (s >= item.code.length) {
+            setTimeout(function () {
+              gauge.style.transition = "none";
+              gauge.style.width = "0%";
+              c.className = c.className.replace(/\bplaying\b/g, "").trim();
+              grid.className = grid.className.replace(/\bcards-locked\b/g, "").trim();
+              isCardPlaying = false;
+            }, 40);
             return;
           }
-
-          clearTimeout(charTimeout);
-          clearTimeout(wordTimeout);
-
-          currentSendingElement = nextElem;
-          iambicState = "SENDING_MARK";
-
-          currentMorseChar += nextElem === "dit" ? "." : "-";
-          updateLiveBufferDisplay();
-          toneOn("TX");
-
-          var markDuration = nextElem === "dit" ? unitMs : unitMs * 3;
-          clearTimeout(iambicTimer);
-          iambicTimer = setTimeout(stepIambicFSM, markDuration);
-        } else if (iambicState === "SENDING_MARK") {
-          toneOff("TX");
-          lastCompletedElement = currentSendingElement;
-          iambicState = "SENDING_SPACE";
-
-          clearTimeout(iambicTimer);
-          iambicTimer = setTimeout(stepIambicFSM, unitMs);
-        } else if (iambicState === "SENDING_SPACE") {
-          iambicState = "IDLE";
-          currentSendingElement = null;
-
-          if (ditPressed || dahPressed || ditMemory || dahMemory) {
-            stepIambicFSM();
-          } else {
-            scheduleDecoders(unitMs, false);
-          }
+          toneOn("RX");
+          workerSleep(item.code[s] === "." ? t.dotMs : t.dashMs).then(function () {
+            toneOff("RX");
+            if (s < item.code.length - 1) return workerSleep(t.elemPauseMs);
+          }).then(function () { s++; nextSym(); });
         }
-      }
-
-      function triggerDitDown() {
-        clearTimeout(charTimeout);
-        clearTimeout(wordTimeout);
-        ditPressed = true;
-        if (iambicState === "SENDING_MARK") {
-          if (currentSendingElement === "dah") ditMemory = true;
-        } else if (iambicState === "SENDING_SPACE") {
-          ditMemory = true;
-        }
-        updatePaddleVisuals();
-        startIambicIfIdle();
-      }
-
-      function triggerDitUp() {
-        ditPressed = false;
-        updatePaddleVisuals();
-      }
-
-      function triggerDahDown() {
-        clearTimeout(charTimeout);
-        clearTimeout(wordTimeout);
-        dahPressed = true;
-        if (iambicState === "SENDING_MARK") {
-          if (currentSendingElement === "dit") dahMemory = true;
-        } else if (iambicState === "SENDING_SPACE") {
-          dahMemory = true;
-        }
-        updatePaddleVisuals();
-        startIambicIfIdle();
-      }
-
-      function triggerDahUp() {
-        dahPressed = false;
-        updatePaddleVisuals();
-      }
-
-      function resetIambicHardware() {
-        clearTimeout(iambicTimer);
-        iambicTimer = null;
-        iambicState = "IDLE";
-        currentSendingElement = null;
-        lastCompletedElement = null;
-        ditPressed = false;
-        dahPressed = false;
-        ditMemory = false;
-        dahMemory = false;
-        toneOff("TX");
-        updatePaddleVisuals();
-      }
-
-      function clearTx() {
-        txHistory = "";
-        currentMorseChar = "";
-        estimatedDot = 95;
-        clearTimeout(charTimeout);
-        clearTimeout(wordTimeout);
-        resetIambicHardware();
-        setUiText("txDecoded", "");
-        setUiText("lblTxDetected", "70 зн/мин [СБРОС]");
-        updateLiveBufferDisplay();
-        var el = document.getElementById("virtualKey");
-        if (el) el.className = el.className.replace(/\bpressed\b/g, "").trim();
-      }
-
-      function bindAction(el, downFn, upFn) {
-        if (!el) return;
-        var isDown = false;
-        el.addEventListener("mousedown", function (e) {
-          if (e.button !== 0) return;
-          e.preventDefault();
-          isDown = true;
-          downFn();
-        }, false);
-
-        window.addEventListener("mouseup", function () {
-          if (isDown) {
-            isDown = false;
-            upFn();
-          }
-        }, false);
-
-        el.addEventListener("touchstart", function (e) {
-          e.preventDefault();
-          isDown = true;
-          downFn();
-        }, false);
-
-        window.addEventListener("touchend", function () {
-          if (isDown) {
-            isDown = false;
-            upFn();
-          }
-        }, false);
-      }
-
-      bindAction(document.getElementById("virtualKey"), onStraightKeyDown, onStraightKeyUp);
-      bindAction(document.getElementById("paddleLeft"), triggerDitDown, triggerDitUp);
-      bindAction(document.getElementById("paddleRight"), triggerDahDown, triggerDahUp);
-
-      var mousePad = document.getElementById("mousePadZone");
-      mousePad.addEventListener("contextmenu", function (e) {
-        e.preventDefault();
-        return false;
-      });
-
-      mousePad.addEventListener("mousedown", function (e) {
-        e.preventDefault();
-        if (currentKeyerMode !== "iambic" || currentIambicSource !== "MOUSE") return;
-        if (e.button === 0) triggerDitDown();
-        else if (e.button === 2) triggerDahDown();
-      });
-
-      mousePad.addEventListener("mouseup", function (e) {
-        e.preventDefault();
-        if (currentKeyerMode !== "iambic" || currentIambicSource !== "MOUSE") return;
-        if (e.button === 0) triggerDitUp();
-        else if (e.button === 2) triggerDahUp();
-      });
-
-      mousePad.addEventListener("mouseleave", function () {
-        if (currentIambicSource === "MOUSE") {
-          triggerDitUp();
-          triggerDahUp();
-        }
-      });
-
-      // Клавиатурный интерфейс с гарантированным подавлением повторов под Astra Linux
-      var keySpacePressed = false;
-      var keyZPressed = false;
-      var keyXPressed = false;
-
-      window.addEventListener("keydown", function (e) {
-        var tag = (e.target || {}).tagName;
-        if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
-
-        var code = e.code || "";
-        var kc = e.keyCode || e.which;
-        var key = (e.key || "").toLowerCase();
-
-        if (code === "Space" || kc === 32) {
-          e.preventDefault();
-          if (!keySpacePressed) {
-            keySpacePressed = true;
-            onStraightKeyDown();
-          }
-        } else if (code === "KeyZ" || kc === 90 || key === "z" || key === "я") {
-          if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
-            e.preventDefault();
-            if (!keyZPressed) {
-              keyZPressed = true;
-              triggerDitDown();
-            }
-          }
-        } else if (code === "KeyX" || kc === 88 || key === "x" || key === "ч") {
-          if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
-            e.preventDefault();
-            if (!keyXPressed) {
-              keyXPressed = true;
-              triggerDahDown();
-            }
-          }
-        }
-      });
-
-      window.addEventListener("keyup", function (e) {
-        var tag = (e.target || {}).tagName;
-        if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
-
-        var code = e.code || "";
-        var kc = e.keyCode || e.which;
-        var key = (e.key || "").toLowerCase();
-
-        if (code === "Space" || kc === 32) {
-          e.preventDefault();
-          keySpacePressed = false;
-          onStraightKeyUp();
-        } else if (code === "KeyZ" || kc === 90 || key === "z" || key === "я") {
-          if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
-            e.preventDefault();
-            keyZPressed = false;
-            triggerDitUp();
-          }
-        } else if (code === "KeyX" || kc === 88 || key === "x" || key === "ч") {
-          if (currentKeyerMode === "iambic" && currentIambicSource === "KEYS") {
-            e.preventDefault();
-            keyXPressed = false;
-            triggerDahUp();
-          }
-        }
-      });
-
-      // 10. ТАБЛИЦА КОДОВ
-      var isCardPlaying = false;
-
-      function renderStudyTable() {
-        var grid = document.getElementById("studyGrid");
-        grid.innerHTML = "";
-
-        for (var i = 0; i < MORSE_DB.length; i++) {
-          (function (item) {
-            var c = document.createElement("div");
-            c.className = "morse-card";
-            c.innerHTML =
-              '<div class="card-fill-gauge"></div>' +
-              '<div class="sym">' + item.ch + "</div>" +
-              '<div class="code">' + item.code + "</div>" +
-              '<div class="mnemonic">' + item.mn + "</div>";
-
-            c.onclick = function () {
-              if (rxActive || isCardPlaying) return;
-
-              isCardPlaying = true;
-              grid.className += " cards-locked";
-              c.className += " playing";
-
-              initAudio();
-              var t = getLiveAtomTimings();
-              var gauge = c.querySelector(".card-fill-gauge");
-
-              var totalDurationMs = 0;
-              for (var k = 0; k < item.code.length; k++) {
-                totalDurationMs += item.code[k] === "." ? t.dotMs : t.dashMs;
-                if (k < item.code.length - 1) totalDurationMs += t.elemPauseMs;
-              }
-
-              gauge.style.transition = "width " + totalDurationMs + "ms linear";
-              requestAnimationFrame(function () {
-                gauge.style.width = "100%";
-              });
-
-              var s = 0;
-              function nextSym() {
-                if (s >= item.code.length) {
-                  setTimeout(function () {
-                    gauge.style.transition = "none";
-                    gauge.style.width = "0%";
-                    c.className = c.className.replace(/\bplaying\b/g, "").trim();
-                    grid.className = grid.className.replace(/\bcards-locked\b/g, "").trim();
-                    isCardPlaying = false;
-                  }, 40);
-                  return;
-                }
-
-                toneOn("RX");
-                workerSleep(item.code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-                  toneOff("RX");
-                  if (s < item.code.length - 1) return workerSleep(t.elemPauseMs);
-                }).then(function () {
-                  s++;
-                  nextSym();
-                });
-              }
-              nextSym();
-            };
-            grid.appendChild(c);
-          })(MORSE_DB[i]);
-        }
-      }
-
-      function switchTab(tabId, el) {
-        var tabs = document.querySelectorAll(".tab-btn");
-        for (var i = 0; i < tabs.length; i++) tabs[i].className = "tab-btn";
-        var contents = document.querySelectorAll(".content-block");
-        for (var j = 0; j < contents.length; j++) contents[j].className = "content-block";
-        el.className += " active";
-        document.getElementById(tabId).className += " active";
-        applyAudioParamsNow();
-        if (tabId === "tab-rx") refreshAllAutoGrows();
-      }
-
-      function sync(rId, lId, unit, scale) {
-        scale = scale || 1;
-        var r = document.getElementById(rId), l = document.getElementById(lId);
-        if (!r || !l) return;
-        var handler = function () {
-          var val = scale === 1 ? r.value : (r.value / scale).toFixed(1);
-          setUiText(l, val + " " + unit);
-          applyAudioParamsNow();
-        };
-        r.oninput = handler;
-        r.onchange = handler;
-      }
-
-      // Синхронизация 3 скоростных ползунков
-      var rngChar = document.getElementById("rngCharSpeed");
-      var rngFarn = document.getElementById("rngFarnSpeed");
-      var rngGrpPause = document.getElementById("rngGroupPause");
-
-      function updateSpeedControls() {
-        var charVal = parseInt(rngChar.value, 10);
-        rngFarn.max = charVal;
-        if (parseInt(rngFarn.value, 10) > charVal) {
-          rngFarn.value = charVal;
-          setUiText("lblFarnSpeed", charVal + " зн/мин");
-        }
-        setUiText("lblCharSpeed", charVal + " зн/мин");
-        applyAudioParamsNow();
-      }
-
-      rngChar.oninput = updateSpeedControls;
-      rngChar.onchange = updateSpeedControls;
-
-      rngFarn.oninput = function () {
-        setUiText("lblFarnSpeed", rngFarn.value + " зн/мин");
-        applyAudioParamsNow();
+        nextSym();
       };
-      rngFarn.onchange = rngFarn.oninput;
+      grid.appendChild(c);
+    })(MORSE_DB[i]);
+  }
+}
 
-      rngGrpPause.oninput = function () {
-        var mult = (parseFloat(this.value) / 10).toFixed(1);
-        var suffix = mult === "1.0" ? " (стандарт)" : "";
-        setUiText("lblGroupPause", "x" + mult + suffix);
-      };
-      rngGrpPause.onchange = rngGrpPause.oninput;
+function switchTab(tabId, el) {
+  var tabs = document.querySelectorAll(".tab-btn");
+  for (var i = 0; i < tabs.length; i++) tabs[i].className = "tab-btn";
+  var contents = document.querySelectorAll(".content-block");
+  for (var j = 0; j < contents.length; j++) contents[j].className = "content-block";
+  el.className += " active";
+  document.getElementById(tabId).className += " active";
+  applyAudioParamsNow();
+  if (tabId === "tab-rx") refreshAllAutoGrows();
+}
 
-      sync("rngIambicSpeed", "lblIambicSpeed", "зн/мин");
-      sync("rngToneFreq", "lblToneFreq", "Гц");
-      sync("rngToneVol", "lblToneVol", "%");
-      sync("rngRampTime", "lblRampTime", "мс");
-      sync("rngQsbDepth", "lblQsbDepth", "%");
-      sync("rngQsbPeriod", "lblQsbPeriod", "сек", 10);
-      sync("rngNoiseVol", "lblNoiseVol", "%");
-      sync("rngQrmVol", "lblQrmVol", "%");
-      sync("rngTapeSpeed", "lblTapeSpeed", "px/s");
+function sync(rId, lId, unit, scale) {
+  scale = scale || 1;
+  var r = document.getElementById(rId), l = document.getElementById(lId);
+  if (!r || !l) return;
+  var handler = function () {
+    var val = scale === 1 ? r.value : (r.value / scale).toFixed(1);
+    setUiText(l, val + " " + unit);
+    applyAudioParamsNow();
+  };
+  r.oninput = handler;
+  r.onchange = handler;
+}
 
-      // Часы (HH:MM:SS)
-      setInterval(function () {
-        var d = new Date();
-        var h = (d.getHours() < 10 ? "0" : "") + d.getHours();
-        var m = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-        var s = (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
-        setUiText("clock", h + ":" + m + ":" + s);
-      }, 1000);
+var rngChar = document.getElementById("rngCharSpeed");
+var rngFarn = document.getElementById("rngFarnSpeed");
+var rngGrpPause = document.getElementById("rngGroupPause");
+var rngStudy = document.getElementById("rngStudySpeed");
 
-      // ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ
-      resizeCanvas();
-      renderStudyTable();
-      uiGenerateGroupsTable();
-      refreshAllAutoGrows();
-      requestAnimationFrame(renderUndulator);
-    </script>
-  </body>
+function updateSpeedControls() {
+  var charVal = parseInt(rngChar.value, 10);
+  rngFarn.max = charVal;
+  if (parseInt(rngFarn.value, 10) > charVal) {
+    rngFarn.value = charVal;
+    setUiText("lblFarnSpeed", charVal + " зн/мин");
+  }
+  setUiText("lblCharSpeed", charVal + " зн/мин");
+  applyAudioParamsNow();
+}
+
+rngChar.oninput = updateSpeedControls;
+rngChar.onchange = updateSpeedControls;
+
+rngFarn.oninput = function () {
+  setUiText("lblFarnSpeed", rngFarn.value + " зн/мин");
+  applyAudioParamsNow();
+};
+rngFarn.onchange = rngFarn.oninput;
+
+rngGrpPause.oninput = function () {
+  var mult = (parseFloat(this.value) / 10).toFixed(1);
+  var suffix = mult === "1.0" ? " (стандарт)" : "";
+  setUiText("lblGroupPause", "x" + mult + suffix);
+};
+rngGrpPause.onchange = rngGrpPause.oninput;
+
+if (rngStudy) {
+  rngStudy.oninput = function() {
+    setUiText("lblStudySpeed", this.value + " зн/мин");
+  };
+  rngStudy.onchange = rngStudy.oninput;
+}
+
+sync("rngIambicSpeed", "lblIambicSpeed", "зн/мин");
+sync("rngToneFreq", "lblToneFreq", "Гц");
+sync("rngToneVol", "lblToneVol", "%");
+sync("rngRampTime", "lblRampTime", "мс");
+sync("rngQsbDepth", "lblQsbDepth", "%");
+sync("rngQsbPeriod", "lblQsbPeriod", "сек", 10);
+sync("rngNoiseVol", "lblNoiseVol", "%");
+sync("rngQrmVol", "lblQrmVol", "%");
+sync("rngTapeSpeed", "lblTapeSpeed", "px/s");
+
+setInterval(function () {
+  var d = new Date();
+  var h = (d.getHours() < 10 ? "0" : "") + d.getHours();
+  var m = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+  var s = (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
+  setUiText("clock", h + ":" + m + ":" + s);
+}, 1000);
+
+setupShortZeroHandlers();
+resizeCanvas();
+renderStudyTable();
+uiGenerateGroupsTable();
+refreshAllAutoGrows();
+requestAnimationFrame(renderUndulator);
+</script>
+</body>
 </html>
