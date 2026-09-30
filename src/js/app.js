@@ -143,5 +143,6 @@ setupShortZeroHandlers();
 resizeCanvas();
 renderStudyTable();
 uiGenerateGroupsTable();
+initGroupsDragAndDrop();
 refreshAllAutoGrows();
 requestAnimationFrame(renderUndulator);
