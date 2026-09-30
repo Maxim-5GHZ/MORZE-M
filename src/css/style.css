@@ -44,7 +44,8 @@ header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-
 .controls-row-5>.form-group:nth-child(1){flex:1.6 1 110px}
 .controls-row-5>.form-group:nth-child(2){flex:1.4 1 95px}
 .controls-row-5>.form-group:nth-child(3){flex:1.8 1 120px}
-.controls-row-5>.form-group:nth-child(4){flex:2.4 1 160px}
+.controls-row-5>.form-group:nth-child(4){flex:1.4 1 100px}
+.controls-row-5>.form-group:nth-child(5){flex:2.4 1 160px}
 .controls-row-5>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
 .grid-2{display:-moz-box;display:-webkit-box;display:flex;margin:0 -6px}
 .grid-2>.panel{-moz-box-flex:1;flex:1 1 0;margin:0 6px 12px 6px;min-width:0}

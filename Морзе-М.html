@@ -59,7 +59,8 @@ header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-
 .controls-row-5>.form-group:nth-child(1){flex:1.6 1 110px}
 .controls-row-5>.form-group:nth-child(2){flex:1.4 1 95px}
 .controls-row-5>.form-group:nth-child(3){flex:1.8 1 120px}
-.controls-row-5>.form-group:nth-child(4){flex:2.4 1 160px}
+.controls-row-5>.form-group:nth-child(4){flex:1.4 1 100px}
+.controls-row-5>.form-group:nth-child(5){flex:2.4 1 160px}
 .controls-row-5>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
 .grid-2{display:-moz-box;display:-webkit-box;display:flex;margin:0 -6px}
 .grid-2>.panel{-moz-box-flex:1;flex:1 1 0;margin:0 6px 12px 6px;min-width:0}
@@ -211,7 +212,7 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
           <label>Размер группы:</label>
           <select id="groupLength" onchange="uiGenerateGroupsTable()">
             <option value="2">2 знака</option>
-            <option value="3">3 знака</option>
+            <option value="3">3 знак</option>
             <option value="4">4 знака</option>
             <option value="5" selected>5 знаков</option>
           </select>
@@ -223,9 +224,19 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
         <div class="form-group">
           <label>Повторение групп:</label>
           <select id="groupRepeat">
-            <option value="1">1 раз (Зачёт)</option>
-            <option value="2">2 раза (Обучение)</option>
-            <option value="3">3 раза (Начальный)</option>
+            <option value="1">1 раз</option>
+            <option value="2">2 раза</option>
+            <option value="3">3 раза</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Повторение знака:</label>
+          <select id="charRepeat">
+            <option value="1" selected>1 раз</option>
+            <option value="2">2 раза</option>
+            <option value="3">3 раза</option>
+            <option value="4">4 раза</option>
+            <option value="5">5 раз</option>
           </select>
         </div>
         <div class="form-group">
@@ -989,6 +1000,7 @@ function setTrainerLocked(isLocked) {
   document.getElementById("groupLength").disabled = isLocked;
   document.getElementById("numGroups").disabled = isLocked;
   document.getElementById("groupRepeat").disabled = isLocked;
+  document.getElementById("charRepeat").disabled = isLocked;
   document.getElementById("selPreambleMode").disabled = isLocked;
   document.getElementById("btnGenGroups").disabled = isLocked;
   document.getElementById("monoCharInput").disabled = isLocked;
@@ -1084,7 +1096,8 @@ function getPreambleItems() {
   return ["...-"];
 }
 
-function playRadiogramProcess(groups, repeats) {
+function playRadiogramProcess(groups, repeats, charRepeats) {
+  charRepeats = charRepeats || 1;
   var preambleCodes = getPreambleItems();
   var pIdx = 0;
 
@@ -1136,22 +1149,39 @@ function playRadiogramProcess(groups, repeats) {
             var t = getLiveAtomTimings();
             return sleepRx(t.groupPauseMs).then(function () { r++; return nextRepeat(); });
           }
-          highlightChar(g, c);
-          var code = MORSE_MAP[grp[c]], s = 0;
-          function nextSymbol() {
-            if (!code || s >= code.length || !rxActive) {
-              releaseCharHighlight(g, c);
-              var t = getLiveAtomTimings();
-              return sleepRx(t.charPauseMs).then(function () { c++; return nextChar(); });
-            }
-            var t = getLiveAtomTimings();
-            toneOn("RX");
-            return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-              toneOff("RX");
-              return sleepRx(t.elemPauseMs);
-            }).then(function () { s++; return nextSymbol(); });
+          var code = MORSE_MAP[grp[c]];
+          if (!code) {
+            // Неизвестный знак: одна межзнаковая пауза, повторения не применяются
+            var t0 = getLiveAtomTimings();
+            return sleepRx(t0.charPauseMs).then(function () { c++; return nextChar(); });
           }
-          return nextSymbol();
+          highlightChar(g, c);
+          var k = 0;
+          // ПОВТОРЕНИЕ ЗНАКА: один и тот же знак charRepeats раз подряд,
+          // раздельно межзнаковой паузой (слитный приём удвоенных знаков)
+          function nextCharRepeat() {
+            if (k >= charRepeats || !rxActive) {
+              releaseCharHighlight(g, c);
+              c++;
+              return nextChar();
+            }
+            k++;
+            var s = 0;
+            function nextSymbol() {
+              if (s >= code.length || !rxActive) {
+                var t = getLiveAtomTimings();
+                return sleepRx(t.charPauseMs).then(function () { return nextCharRepeat(); });
+              }
+              var t = getLiveAtomTimings();
+              toneOn("RX");
+              return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
+                toneOff("RX");
+                return sleepRx(t.elemPauseMs);
+              }).then(function () { s++; return nextSymbol(); });
+            }
+            return nextSymbol();
+          }
+          return nextCharRepeat();
         }
         return nextChar();
       }
@@ -1180,6 +1210,8 @@ document.getElementById("btnRxStart").onclick = function () {
   document.getElementById("txtUserInput").focus();
 
   var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
+  // Повтор знака — только акустический: эталон радиограммы остаётся без повторов
+  var charRepeats = parseInt(document.getElementById("charRepeat").value, 10) || 1;
   var fullList = [];
   for (var i = 0; i < groups.length; i++) {
     for (var r = 0; r < repeats; r++) fullList.push(groups[i]);
@@ -1195,7 +1227,7 @@ document.getElementById("btnRxStart").onclick = function () {
     document.getElementById("btnRxStart").disabled = false;
     document.getElementById("btnRxStop").disabled = true;
   }
-  playRadiogramProcess(groups, repeats).then(cleanup, cleanup);
+  playRadiogramProcess(groups, repeats, charRepeats).then(cleanup, cleanup);
 };
 
 document.getElementById("btnRxStop").onclick = function () {

@@ -14,7 +14,7 @@ import time
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.join(BASE_DIR, "src")
 TEMPLATE_PATH = os.path.join(SRC_DIR, "index.html")
-OUTPUT_PATH = os.path.join(BASE_DIR, "Морзе-М_Astra_Edition.html")
+OUTPUT_PATH = os.path.join(BASE_DIR, "Морзе-М.html")
 
 INCLUDE_REGEX = re.compile(r'/\*\s*@include\s+([^\s\*]+)\s*\*/')
 

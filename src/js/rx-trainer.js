@@ -40,6 +40,7 @@ function setTrainerLocked(isLocked) {
   document.getElementById("groupLength").disabled = isLocked;
   document.getElementById("numGroups").disabled = isLocked;
   document.getElementById("groupRepeat").disabled = isLocked;
+  document.getElementById("charRepeat").disabled = isLocked;
   document.getElementById("selPreambleMode").disabled = isLocked;
   document.getElementById("btnGenGroups").disabled = isLocked;
   document.getElementById("monoCharInput").disabled = isLocked;
@@ -135,7 +136,8 @@ function getPreambleItems() {
   return ["...-"];
 }
 
-function playRadiogramProcess(groups, repeats) {
+function playRadiogramProcess(groups, repeats, charRepeats) {
+  charRepeats = charRepeats || 1;
   var preambleCodes = getPreambleItems();
   var pIdx = 0;
 
@@ -187,22 +189,39 @@ function playRadiogramProcess(groups, repeats) {
             var t = getLiveAtomTimings();
             return sleepRx(t.groupPauseMs).then(function () { r++; return nextRepeat(); });
           }
-          highlightChar(g, c);
-          var code = MORSE_MAP[grp[c]], s = 0;
-          function nextSymbol() {
-            if (!code || s >= code.length || !rxActive) {
-              releaseCharHighlight(g, c);
-              var t = getLiveAtomTimings();
-              return sleepRx(t.charPauseMs).then(function () { c++; return nextChar(); });
-            }
-            var t = getLiveAtomTimings();
-            toneOn("RX");
-            return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-              toneOff("RX");
-              return sleepRx(t.elemPauseMs);
-            }).then(function () { s++; return nextSymbol(); });
+          var code = MORSE_MAP[grp[c]];
+          if (!code) {
+            // Неизвестный знак: одна межзнаковая пауза, повторения не применяются
+            var t0 = getLiveAtomTimings();
+            return sleepRx(t0.charPauseMs).then(function () { c++; return nextChar(); });
           }
-          return nextSymbol();
+          highlightChar(g, c);
+          var k = 0;
+          // ПОВТОРЕНИЕ ЗНАКА: один и тот же знак charRepeats раз подряд,
+          // раздельно межзнаковой паузой (слитный приём удвоенных знаков)
+          function nextCharRepeat() {
+            if (k >= charRepeats || !rxActive) {
+              releaseCharHighlight(g, c);
+              c++;
+              return nextChar();
+            }
+            k++;
+            var s = 0;
+            function nextSymbol() {
+              if (s >= code.length || !rxActive) {
+                var t = getLiveAtomTimings();
+                return sleepRx(t.charPauseMs).then(function () { return nextCharRepeat(); });
+              }
+              var t = getLiveAtomTimings();
+              toneOn("RX");
+              return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
+                toneOff("RX");
+                return sleepRx(t.elemPauseMs);
+              }).then(function () { s++; return nextSymbol(); });
+            }
+            return nextSymbol();
+          }
+          return nextCharRepeat();
         }
         return nextChar();
       }
@@ -231,6 +250,8 @@ document.getElementById("btnRxStart").onclick = function () {
   document.getElementById("txtUserInput").focus();
 
   var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
+  // Повтор знака — только акустический: эталон радиограммы остаётся без повторов
+  var charRepeats = parseInt(document.getElementById("charRepeat").value, 10) || 1;
   var fullList = [];
   for (var i = 0; i < groups.length; i++) {
     for (var r = 0; r < repeats; r++) fullList.push(groups[i]);
@@ -246,7 +267,7 @@ document.getElementById("btnRxStart").onclick = function () {
     document.getElementById("btnRxStart").disabled = false;
     document.getElementById("btnRxStop").disabled = true;
   }
-  playRadiogramProcess(groups, repeats).then(cleanup, cleanup);
+  playRadiogramProcess(groups, repeats, charRepeats).then(cleanup, cleanup);
 };
 
 document.getElementById("btnRxStop").onclick = function () {
