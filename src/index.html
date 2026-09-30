@@ -1,0 +1,289 @@
+<!-- ==========================================================================
+     ШАБЛОН ИЗДЕЛИЯ МОРЗЕ-М (ASTRA EDITION) — НЕ ОТКРЫВАТЬ НАПРЯМУЮ.
+     Поставка на флешку собирается из этого шаблона и папки src/:
+         python3 build.py   ->   Морзе-М_Astra_Edition.html
+     Метки включения (см. ниже) заменяются содержимым файлов из src/.
+     ВАЖНО: метки включения пишутся с колонки 0 — отступ перед ними
+     попадёт в первую строку внедряемого кода.
+     ========================================================================== -->
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М (ASTRA EDITION)</title>
+<style>
+/* @include css/style.css */
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="header-title"><span class="led" id="rxTxLed"></span><span>ИЗДЕЛИЕ «КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М» // Р-010-УМ // ASTRA EDITION</span></div>
+    <div id="clock">00:00:00</div>
+  </header>
+  <div class="undulator-block">
+    <div class="undulator-header"><span>■ САМОПИСЕЦ ЛЕНТЫ // РЕАЛЬНОЕ ВРЕМЯ</span><span id="lblTapeStatus" style="color:var(--mil-amber)">ЛЕНТА АКТИВНА</span></div>
+    <div class="undulator-canvas-wrap"><canvas id="undulatorCanvas"></canvas></div>
+    <div class="undulator-footer">
+      <div class="undulator-controls">
+        <span>ПРОТЯЖКА:</span>
+        <input type="range" id="rngTapeSpeed" min="40" max="260" value="120" style="width:80px"/>
+        <b id="lblTapeSpeed" style="color:var(--mil-amber);min-width:55px">120 px/s</b>
+        <span style="margin-left:10px">КАНАЛ:</span>
+        <select id="selTapeSource" style="padding:1px 4px;font-size:9px;height:24px;width:auto">
+          <option value="ALL" selected>СКВОЗНОЙ (TX + RX)</option>
+          <option value="TX_ONLY">ТОЛЬКО КЛЮЧ (TX)</option>
+          <option value="RX_ONLY">ТОЛЬКО ЭФИР (RX)</option>
+        </select>
+      </div>
+      <div><button class="btn-hide-preview" onclick="clearTape()">Очистить ленту</button></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-rx', this)">1. Приём на слух</button>
+    <button class="tab-btn" onclick="switchTab('tab-tx', this)">2. Работа на ключе</button>
+    <button class="tab-btn" onclick="switchTab('tab-study', this)">3. Таблица кодов</button>
+    <button class="tab-btn" onclick="switchTab('tab-settings', this)">4. Тракт ПЧ/НЧ, QSB и Фронты</button>
+  </div>
+  <div id="tab-rx" class="content-block active">
+    <div class="panel panel-teacher">
+      <h3>Блок формирования учебных радиограмм</h3>
+      <div class="presets-row" id="presetsBlock">
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')">★ Полный алфавит</span>
+        <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')">Базовые буквы</span>
+        <span class="preset-badge" onclick="setPreset('0 Ø 1 2 3 4 5 6 7 8 9')">Цифровой блок</span>
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 Ø 1 2 3 4 5 6 7 8 9')">Буквы и цифры</span>
+        <span class="preset-badge" onclick="setPreset('= / ? , .')">Спецзнаки и препинание</span>
+        <span class="preset-badge clear-btn" onclick="clearAllTrainer()">✖ Сброс бланка</span>
+      </div>
+      <div class="inputs-2col">
+        <div class="form-group">
+          <label>Набор знаков (через пробел; короткий ноль: [0]+[-]):</label>
+          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this); uiGenerateGroupsTable();">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
+        </div>
+        <div class="form-group">
+          <label>Знаки приоритетной отработки:</label>
+          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this); uiGenerateGroupsTable();"></textarea>
+        </div>
+      </div>
+      <div class="error-banner" id="teacherErrorBox"></div>
+      <div class="controls-row-5">
+        <div class="form-group">
+          <label>Размер группы:</label>
+          <select id="groupLength" onchange="uiGenerateGroupsTable()">
+            <option value="2">2 знака</option>
+            <option value="3">3 знака</option>
+            <option value="4">4 знака</option>
+            <option value="5" selected>5 знаков</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Число групп (0..100):</label>
+          <input type="number" id="numGroups" min="0" max="100" value="12" oninput="uiGenerateGroupsTable()" onchange="uiGenerateGroupsTable()"/>
+        </div>
+        <div class="form-group">
+          <label>Повторение групп:</label>
+          <select id="groupRepeat">
+            <option value="1">1 раз (Зачёт)</option>
+            <option value="2">2 раза (Обучение)</option>
+            <option value="3">3 раза (Начальный)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Вступление (зачин):</label>
+          <select id="selPreambleMode">
+            <option value="NONE">Без вступления</option>
+            <option value="SINGLE_V" selected>Просто Ж (...-)</option>
+            <option value="SERIES_VVV">Серия Ж Ж Ж (...-  ...-  ...-)</option>
+            <option value="HST_VTO">Норматив СРТ: ЖТО (...-  -  ---)</option>
+            <option value="CALL_VVV_EQ">Циркулярное: VVV = (...- ...- ...-  -...-)</option>
+          </select>
+        </div>
+        <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()"><span>⟳ </span> Сформировать</button>
+      </div>
+      <div>
+        <div class="groups-header-bar">
+          <div class="groups-header-left">
+            <span style="font-size:10px;color:var(--mil-dim);font-weight:bold">Бланк радиограммы:</span>
+            <div class="mono-insert-bar" id="monoInsertBar">
+              <label>МОНО-ГРУППА:</label>
+              <input type="text" id="monoCharInput" class="mono-char-input" maxlength="1" placeholder="Ж" onkeydown="if((event.keyCode||event.which)===13){insertMonoGroupFromPanel();if(event.preventDefault)event.preventDefault();}"/>
+              <select id="monoCharCount" class="mono-count-select">
+                <option value="1">1 гр.</option>
+                <option value="2">2 гр.</option>
+                <option value="3" selected>3 гр.</option>
+                <option value="5">5 гр.</option>
+                <option value="10">10 гр.</option>
+              </select>
+              <button type="button" class="btn-mono-insert" id="btnInsertMono" onclick="insertMonoGroupFromPanel()">+ Вставить</button>
+            </div>
+          </div>
+          <div><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
+        </div>
+        <div class="groups-grid" id="groupsContainer"></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Скоростные нормативы</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Скорость посылки:</span><b id="lblCharSpeed">70 зн/мин</b></div>
+          <input type="range" id="rngCharSpeed" min="30" max="200" value="70"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Интервал (Фарнсворт):</span><b id="lblFarnSpeed">50 зн/мин</b></div>
+          <input type="range" id="rngFarnSpeed" min="20" max="70" value="50"/>
+        </div>
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label"><span>Пауза между группами:</span><b id="lblGroupPause">x1.0 (стандарт)</b></div>
+          <input type="range" id="rngGroupPause" min="10" max="50" value="10"/>
+        </div>
+      </div>
+      <div class="panel" style="display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-pack:justify;justify-content:space-between">
+        <h3>Управление приёмным трактом</h3>
+        <div class="noise-box" onclick="toggleNoiseViaBox()">
+          <input type="checkbox" id="chkQuickNoise" onclick="event.stopPropagation(); toggleNoiseFromMain(this.checked);"/>
+          <label for="chkQuickNoise" style="cursor:pointer;font-size:11px">Имитация помех (QRM/QRN) и замираний (QSB)</label>
+        </div>
+        <div class="action-btns">
+          <button class="action-btn btn-start" id="btnRxStart">ПУСК ПРИЁМА</button>
+          <button class="action-btn btn-stop" id="btnRxStop" disabled>СТОП</button>
+          <button class="action-btn btn-check" id="btnRxCheck">КОНТРОЛЬ</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <h3>Журнал оператора (принятый текст):</h3>
+      <textarea id="txtUserInput" placeholder="Ввод принятых групп через пробел (укороченный 0 вводится как [0]+[-])..."></textarea>
+      <div style="margin-top:8px">
+        <div class="rx-result" id="diffBox" style="display:none"></div>
+        <div id="examReport" style="margin-top:6px;font-weight:bold;color:var(--mil-amber);font-size:11px"></div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-tx" class="content-block">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Конфигурация передающего манипулятора</h3>
+        <div class="keyer-mode-toggle">
+          <button class="keyer-mode-btn active" id="btnModeStraight" onclick="setKeyerMode('straight')">ВЕРТИКАЛЬНЫЙ (РУЧНОЙ)</button>
+          <button class="keyer-mode-btn" id="btnModeIambic" onclick="setKeyerMode('iambic')">ЭЛЕКТРОННЫЙ (IAMBIC)</button>
+        </div>
+        <div id="straightKeyParams">
+          <div class="slider-group">
+            <div class="slider-label"><span>Определяемый темп руки (АРУ):</span><b id="lblTxDetected">70 зн/мин [ПОИСК]</b></div>
+            <div style="font-size:9px;color:var(--mil-dim);margin-top:3px">Динамический адаптивный фильтр темпа (EMA α=0.28).</div>
+          </div>
+        </div>
+        <div id="iambicKeyParams" style="display:none">
+          <div class="slider-group">
+            <div class="slider-label"><span>Скорость автомата передачи:</span><b id="lblIambicSpeed">70 зн/мин</b></div>
+            <input type="range" id="rngIambicSpeed" min="30" max="220" value="70"/>
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label>Орган управления манипулятором:</label>
+            <select id="selIambicInputSource" onchange="switchIambicInputSource(this.value)">
+              <option value="KEYS" selected>КЛАВИАТУРА [ Z / X ] или [ Я / Ч ]</option>
+              <option value="MOUSE">МЫШЬ (ЛКМ - ТОЧКА, ПКМ - ТИРЕ)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin:12px 0">
+          <div class="morse-key-single" id="virtualKey">МАНИПУЛЯТОР (КЛАВИША ПРОБЕЛ)</div>
+          <div class="iambic-paddle-container" id="virtualPaddle" style="display:none">
+            <div class="paddle-lever" id="paddleLeft"><span>● ТОЧКА (DIT)</span><span style="font-size:8px;color:var(--mil-dim)">[ Z ] или [ Я ]</span></div>
+            <div class="paddle-lever" id="paddleRight"><span>▬ ТИРЕ (DAH)</span><span style="font-size:8px;color:var(--mil-dim)">[ X ] или [ Ч ]</span></div>
+          </div>
+          <div class="mouse-pad-zone" id="mousePadZone">
+            <div class="mouse-pad-halves">
+              <div class="mouse-half" id="padHalfLeft"><span>● ЛКМ: ТОЧКА</span><span style="font-size:8px">УДЕРЖАНИЕ ДЛЯ СЕРИИ</span></div>
+              <div class="mouse-pad-divider"></div>
+              <div class="mouse-half" id="padHalfRight"><span>▬ ПКМ: ТИРЕ</span><span style="font-size:8px">ОБА КЛИКА: СЖАТИЕ</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="live-morse-buffer" id="lblLiveMorseBuffer">БУФЕР СИМВОЛА: [ ГОТОВ ]</div>
+        <button class="action-btn btn-stop" style="width:100%;height:32px;margin-top:8px" onclick="clearTx()">Очистить регистр</button>
+      </div>
+      <div class="panel">
+        <h3>Регистр декодированных сигналов:</h3>
+        <div class="rx-result" id="txDecoded" style="height:145px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-study" class="content-block">
+    <div class="panel">
+      <h3>Настройки воспроизведения кодов</h3>
+      <div class="slider-group" style="margin-bottom:0">
+        <div class="slider-label"><span>Независимая скорость (только для этой вкладки):</span><b id="lblStudySpeed">70 зн/мин</b></div>
+        <input type="range" id="rngStudySpeed" min="30" max="200" value="70"/>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <h3>Кодовая таблица и напевы</h3>
+      <div class="table-grid" id="studyGrid"></div>
+    </div>
+  </div>
+  <div id="tab-settings" class="content-block">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Акустический тракт НЧ</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Несущая частота:</span><b id="lblToneFreq">700 Гц</b></div>
+          <input type="range" id="rngToneFreq" min="400" max="1100" value="700"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Уровень НЧ:</span><b id="lblToneVol">70%</b></div>
+          <input type="range" id="rngToneVol" min="0" max="100" value="70"/>
+        </div>
+        <h3 style="margin-top:16px">Формирование фронтов</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Время сглаживания фронта:</span><b id="lblRampTime">6 мс</b></div>
+          <input type="range" id="rngRampTime" min="1" max="25" value="6"/>
+        </div>
+        <div class="form-group">
+          <label>Профиль огибающей:</label>
+          <select id="selRampShape" onchange="applyAudioParamsNow()">
+            <option value="rc" selected>Экспоненциальный RC</option>
+            <option value="linear">Линейный трапецеидальный</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Эфир: замирания и радиопомехи</h3>
+        <div class="slider-group">
+          <div class="slider-label"><span>Глубина замираний (QSB):</span><b id="lblQsbDepth">50%</b></div>
+          <input type="range" id="rngQsbDepth" min="0" max="95" value="50"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Период цикла замираний:</span><b id="lblQsbPeriod">5.0 сек</b></div>
+          <input type="range" id="rngQsbPeriod" min="15" max="120" value="50"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Атмосферный шум (QRN):</span><b id="lblNoiseVol">35%</b></div>
+          <input type="range" id="rngNoiseVol" min="0" max="100" value="35"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Мешающая станция (QRM):</span><b id="lblQrmVol">25%</b></div>
+          <input type="range" id="rngQrmVol" min="0" max="100" value="25"/>
+        </div>
+        <div style="margin-top:14px">
+          <button class="action-btn btn-check" id="btnTestTone" style="width:100%;height:32px" onclick="toggleTestTone()">🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* @include js/polyfills.js */
+/* @include js/morse-db.js */
+/* @include js/audio.js */
+/* @include js/undulator.js */
+/* @include js/rx-trainer.js */
+/* @include js/tx-keyer.js */
+/* @include js/app.js */
+</script>
+</body>
+</html>

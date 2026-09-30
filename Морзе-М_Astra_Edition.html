@@ -1,3 +1,11 @@
+<!-- ==========================================================================
+     ШАБЛОН ИЗДЕЛИЯ МОРЗЕ-М (ASTRA EDITION) — НЕ ОТКРЫВАТЬ НАПРЯМУЮ.
+     Поставка на флешку собирается из этого шаблона и папки src/:
+         python3 build.py   ->   Морзе-М_Astra_Edition.html
+     Метки включения (см. ниже) заменяются содержимым файлов из src/.
+     ВАЖНО: метки включения пишутся с колонки 0 — отступ перед ними
+     попадёт в первую строку внедряемого кода.
+     ========================================================================== -->
 <!doctype html>
 <html lang="ru">
 <head>
@@ -5,6 +13,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>КОМПЛЕКС ТРЕНАЖЁРНЫЙ СВЯЗИ МОРЗЕ-М (ASTRA EDITION)</title>
 <style>
+/* ==========================================================================
+   МОДУЛЬ: СТИЛИ (ЕДИНЫЙ ФАЙЛ)
+   Оформление корпуса прибора, панелей, вкладок, ленты и элементов формы.
+   Требования: без CSS-переменных уровня, критичных для Gecko < 17;
+   для flex-раскладки продублированы префиксы -moz- / -webkit-.
+   ========================================================================== */
 :root{--chassis-bg:#141812;--panel-bg:#22291f;--subpanel-bg:#192016;--screen-bg:#0c110a;--border-metal:#3d4a37;--border-dark:#080c07;--border-light:#4e5f47;--mil-white:#e1e7de;--mil-dim:#798772;--mil-amber:#ffb000;--mil-green:#33ff33;--mil-red:#ff3b30;--tape-paper:#0a0f08;--btn-base:#2a3326;--btn-border:#44543e;--btn-hover:#374432}
 *{box-sizing:border-box}
 body{margin:0;padding:8px;font-family:"Courier New","Consolas",monospace;background:var(--chassis-bg);color:var(--mil-white);user-select:none;-moz-user-select:none;-webkit-user-select:none;text-transform:uppercase;overflow-x:hidden}
@@ -137,6 +151,7 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
 .morse-card .code{color:var(--mil-green);font-size:11px;margin:2px 0}
 .morse-card .mnemonic{color:var(--mil-dim);font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .live-morse-buffer{font-size:11px;color:var(--mil-amber);font-weight:bold;min-height:18px;margin-top:4px;letter-spacing:2px}
+
 </style>
 </head>
 <body>
@@ -400,7 +415,16 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
 </div>
 
 <script>
-// ПОЛИФИЛЫ И СОВМЕСТИМОСТЬ ДЛЯ DEBIAN 8 / ASTRA LINUX / FIREFOX 43 (GECKO)
+/* ==========================================================================
+   МОДУЛЬ: ПОЛИФИЛЫ И СОВМЕСТИМОСТЬ (DEBIAN 8 / ASTRA LINUX / FIREFOX 43)
+   - innerText для старых Gecko;
+   - DOM-хелперы: findAncestor(), setUiText();
+   - ввод короткого нуля (Ø) сочетанием 0 и -;
+   - фоновый таймер Web Worker (обход троттлинга) с fallback на setTimeout.
+   ВАЖНО: Worker создаётся ТОЛЬКО из Blob + createObjectURL — внешний файл
+   worker'а с флешки (file://) будет заблокирован политикой same-origin.
+   ========================================================================== */
+
 if (!("innerText" in document.createElement("div"))) {
   Object.defineProperty(HTMLElement.prototype, "innerText", {
     get: function(){ return this.textContent; },
@@ -568,6 +592,14 @@ function workerSleep(ms) {
   });
 }
 
+
+/* ==========================================================================
+   МОДУЛЬ: БАЗА МОРЗЕ (ТАБЛИЦА ЗНАКОВ, НАПЕВЫ, СПРАВОЧНИК)
+   - MORSE_DB: коды и мнемонические напевы для всех знаков;
+   - MORSE_MAP / REVERSE_MORSE: прямой и обратный словари;
+   - cleanMorseChars(), ensureCharInCharset();
+   - авто-подгонка высоты текстовых полей (autoGrow).
+   ========================================================================== */
 var MORSE_DB = [
   { ch: "А", code: ".-", mn: "ай-даа" }, { ch: "Б", code: "-...", mn: "баа-ки-те-кут" },
   { ch: "В", code: ".--", mn: "ви-даа-лаа" }, { ch: "Г", code: "--.", mn: "гаа-раа-жи" },
@@ -630,6 +662,14 @@ function ensureCharInCharset(ch) {
   }
 }
 
+
+/* ==========================================================================
+   МОДУЛЬ: ЗВУКОВОЙ ТРАКТ (WEB AUDIO API)
+   Синтез телеграфного тона, коммутация ключом, QSB-модуляция, фильтры
+   ПЧ/НЧ, шум эфира (QRN), мешающая станция (QRM), компрессор, тест-тон.
+   ВАЖНО (Gecko 43): только ScriptProcessorNode / createOscillator /
+   createBufferSource. AudioWorklet отсутствует — не применять.
+   ========================================================================== */
 var audioCtx = null, mainToneOsc = null, keyingGain = null, qsbGain = null, qsbLfo = null, qsbDepthGain = null, masterToneGain = null;
 var noiseNode = null, noiseGain = null, qrmOsc = null, qrmGain = null;
 var noiseEnabled = false, rxActive = false, isTestToneOn = false;
@@ -818,6 +858,12 @@ function toggleNoiseFromMain(state) {
   applyAudioParamsNow();
 }
 
+
+/* ==========================================================================
+   МОДУЛЬ: САМОПИСЕЦ ЛЕНТЫ (UNDULATOR, CANVAS 2D)
+   Отрисовка бегущей ленты в реальном времени, масштаб px/s, селектор
+   каналов (TX / RX / сквозной), очистка ленты, пересчёт при resize.
+   ========================================================================== */
 var canvas = document.getElementById("undulatorCanvas");
 var ctx = canvas.getContext("2d");
 var tapeState = 0, tapePoints = [], lastUndulatorTime = window.performance && performance.now ? performance.now() : Date.now();
@@ -900,6 +946,15 @@ function renderUndulator() {
 
 function clearTape() { tapePoints = []; }
 
+
+/* ==========================================================================
+   МОДУЛЬ: ПРИЁМ НА СЛУХ И КОНТРОЛЬ РАДИОГРАММ (RX)
+   - блокировка/подсветка групп и знаков, режим "приём вслепую";
+   - нормирование интервалов: напев / межбуквенная / межгрупповая пауза;
+   - генерация и передача радиограмм (зачин, Фарнсворт, повторы);
+   - валидация ввода, сетка групп 5 знаков, пресеты, выравнивание
+     Нидлмана — Вунша (alignSequences) и выставление оценки.
+   ========================================================================== */
 function setTrainerLocked(isLocked) {
   var cells = document.querySelectorAll(".group-cell:not(.group-cell-add)");
   for (var i = 0; i < cells.length; i++) {
@@ -1555,6 +1610,15 @@ document.getElementById("btnRxCheck").onclick = function () {
   setUiText("examReport", "ИТОГ: ПРИНЯТО ВЕРНО " + Math.max(0, total - errors) + " ИЗ " + total + " (" + percent + "%). ОШИБОК: " + errors + ". ОЦЕНКА: " + mark);
 };
 
+
+/* ==========================================================================
+   МОДУЛЬ: РАБОТА НА КЛЮЧЕ (TX)
+   - вертикальный (прямой) ключ с АРУ темпа руки (EMA-фильтр);
+   - электронный ключ Iambic Mode B: память элементов, чередование,
+     ямбическое сжатие;
+   - ввод с клавиатуры (латиница Z/X и русская Я/Ч) и манипулятора "мышь";
+   - накопление переданного текста в буфер приёма.
+   ========================================================================== */
 var currentKeyerMode = "straight", currentIambicSource = "KEYS";
 
 function switchIambicInputSource(src) {
@@ -1895,6 +1959,14 @@ window.addEventListener("keyup", function (e) {
   }
 });
 
+
+/* ==========================================================================
+   МОДУЛЬ: ИНИЦИАЛИЗАЦИЯ И ОБЩИЙ КАРКАС ПРИЛОЖЕНИЯ (APP)
+   - таблица кодов (карточки знаков), переключение вкладок;
+   - двусторонняя синхронизация слайдеров и подписей;
+   - часы на индикаторе;
+   - стартовый запуск модулей (boot-секция в конце файла).
+   ========================================================================== */
 var isCardPlaying = false;
 function renderStudyTable() {
   var grid = document.getElementById("studyGrid");
@@ -2035,6 +2107,7 @@ renderStudyTable();
 uiGenerateGroupsTable();
 refreshAllAutoGrows();
 requestAnimationFrame(renderUndulator);
+
 </script>
 </body>
 </html>
