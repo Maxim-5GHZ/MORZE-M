@@ -54,17 +54,18 @@ header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-
 .inputs-2col{display:-moz-box;display:-webkit-box;display:flex;margin:0 -5px 8px -5px}
 .inputs-2col>.form-group:first-child{-moz-box-flex:1.15;flex:1.15;margin:0 5px}
 .inputs-2col>.form-group:last-child{-moz-box-flex:0.85;flex:0.85;margin:0 5px}
-.controls-row-5{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;-moz-box-align:end;align-items:flex-end;margin:0 -4px 10px -4px}
-.controls-row-5>.form-group{margin:4px;box-sizing:border-box}
-.controls-row-5>.form-group:nth-child(1){flex:1.6 1 110px}
-.controls-row-5>.form-group:nth-child(2){flex:1.4 1 95px}
-.controls-row-5>.form-group:nth-child(3){flex:1.8 1 120px}
-.controls-row-5>.form-group:nth-child(4){flex:1.4 1 100px}
-.controls-row-5>.form-group:nth-child(5){flex:2.4 1 160px}
-.controls-row-5>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
+.controls-row-6{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;-moz-box-align:end;align-items:flex-end;margin:0 -4px 10px -4px}
+.controls-row-6>.form-group{margin:4px;box-sizing:border-box}
+.controls-row-6>.form-group:nth-child(1){flex:1.6 1 110px}
+.controls-row-6>.form-group:nth-child(2){flex:1.4 1 95px}
+.controls-row-6>.form-group:nth-child(3){flex:1.8 1 120px}
+.controls-row-6>.form-group:nth-child(4){flex:1.4 1 100px}
+.controls-row-6>.form-group:nth-child(5){flex:2.4 1 160px}
+.controls-row-6>.form-group:nth-child(6){flex:2.2 1 150px}
+.controls-row-6>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
 .grid-2{display:-moz-box;display:-webkit-box;display:flex;margin:0 -6px}
 .grid-2>.panel{-moz-box-flex:1;flex:1 1 0;margin:0 6px 12px 6px;min-width:0}
-@media(max-width:768px){.inputs-2col,.grid-2,.controls-row-5{display:block;margin:0 0 8px 0}.inputs-2col>.form-group,.grid-2>.panel,.controls-row-5>.form-group,.controls-row-5>.btn-gen{margin:0 0 8px 0;width:100%!important}}
+@media(max-width:768px){.inputs-2col,.grid-2,.controls-row-6{display:block;margin:0 0 8px 0}.inputs-2col>.form-group,.grid-2>.panel,.controls-row-6>.form-group,.controls-row-6>.btn-gen{margin:0 0 8px 0;width:100%!important}}
 .form-group{display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column}
 .form-group label{font-size:10px;font-weight:bold;color:var(--mil-dim);margin-bottom:4px}
 input[type="text"],input[type="number"],select,textarea{background:var(--screen-bg);border:1px solid #33422d;color:var(--mil-green);padding:5px 8px;font-family:inherit;font-size:12px;font-weight:bold;outline:none;width:100%}
@@ -87,10 +88,13 @@ input:focus:not(:disabled),select:focus:not(:disabled),textarea:focus:not(:disab
 .btn-mono-insert:hover:not(:disabled){background:#394d33;border-color:var(--mil-amber)}
 .groups-grid{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;max-height:220px;overflow-y:auto;padding:4px;background:var(--screen-bg);border:1px solid #33422d;margin:0 -2px}
 .group-cell{flex:0 0 calc(10% - 6px);min-width:90px;margin:3px;background:#171f14;border:1px solid #2e3b28;padding:3px 2px;text-align:center;position:relative;cursor:move}
+.group-cell.dnd-shifting{transition:transform .16s ease-out}
 .groups-grid.dnd-active{-moz-user-select:none;user-select:none}
-.group-cell.drag-source{opacity:.45;background:#242a1c!important;border-color:var(--mil-amber)!important;cursor:move}
-.group-cell.drop-before{box-shadow:inset 3px 0 0 var(--mil-amber)}
-.group-cell.drop-after{box-shadow:inset -3px 0 0 var(--mil-amber)}
+.groups-grid.dnd-active .group-cell.drag-source{opacity:.4;background:#12180f!important;border:1px dashed var(--mil-amber)!important}
+.group-drag-ghost{position:fixed;z-index:9999;pointer-events:none;margin:0;padding:3px 2px;background:#1d2417;border:1px solid var(--mil-amber);box-shadow:0 6px 16px rgba(0,0,0,.7);text-align:center;opacity:.95;cursor:move}
+.group-drag-idx{display:block;font-size:8px;color:var(--mil-dim);margin-bottom:2px}
+.group-drag-text{color:var(--mil-green);font-size:13px;font-weight:bold;letter-spacing:2px;line-height:18px;white-space:pre}
+.group-drag-lock{color:var(--mil-dim);font-size:8px;letter-spacing:1px;line-height:14px;white-space:pre}
 @media(max-width:900px){.group-cell{flex:0 0 calc(20% - 6px)}}
 @media(max-width:600px){.group-cell{flex:0 0 calc(33.33% - 6px)}}
 .group-cell.locked{background:#11170f;border-color:#20291c;cursor:default}
@@ -211,7 +215,7 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
         </div>
       </div>
       <div class="error-banner" id="teacherErrorBox"></div>
-      <div class="controls-row-5">
+      <div class="controls-row-6">
         <div class="form-group">
           <label>Размер группы:</label>
           <select id="groupLength" onchange="uiGenerateGroupsTable()">
@@ -251,6 +255,18 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
             <option value="SERIES_VVV">Серия Ж Ж Ж (...-  ...-  ...-)</option>
             <option value="HST_VTO">Норматив СРТ: ЖТО (...-  -  ---)</option>
             <option value="CALL_VVV_EQ">Циркулярное: VVV = (...- ...- ...-  -...-)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Окончание (концовка):</label>
+          <select id="selPostambleMode">
+            <option value="NONE">Без окончания</option>
+            <option value="SINGLE_K" selected>Просто К (-.-)</option>
+            <option value="SERIES_KKK">Серия К К К (-.-  -.-  -.-)</option>
+            <option value="EQ_PERIOD">Знак «точка» = (-...-)</option>
+            <option value="K_EQ">К и точка (-.-  -...-)</option>
+            <option value="AR">Международное AR (.-.-.)</option>
+            <option value="SK">Международное SK (...-.-)</option>
           </select>
         </div>
         <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()"><span>⟳ </span> Сформировать</button>
@@ -966,7 +982,7 @@ function clearTape() { tapePoints = []; }
    МОДУЛЬ: ПРИЁМ НА СЛУХ И КОНТРОЛЬ РАДИОГРАММ (RX)
    - блокировка/подсветка групп и знаков, режим "приём вслепую";
    - нормирование интервалов: напев / межбуквенная / межгрупповая пауза;
-   - генерация и передача радиограмм (зачин, Фарнсворт, повторы);
+   - генерация и передача радиограмм (зачин, концовка, Фарнсворт, повторы);
    - валидация ввода, сетка групп 5 знаков, пресеты, выравнивание
      Нидлмана — Вунша (alignSequences) и выставление оценки.
    ========================================================================== */
@@ -1006,6 +1022,7 @@ function setTrainerLocked(isLocked) {
   document.getElementById("groupRepeat").disabled = isLocked;
   document.getElementById("charRepeat").disabled = isLocked;
   document.getElementById("selPreambleMode").disabled = isLocked;
+  document.getElementById("selPostambleMode").disabled = isLocked;
   document.getElementById("btnGenGroups").disabled = isLocked;
   document.getElementById("monoCharInput").disabled = isLocked;
   document.getElementById("monoCharCount").disabled = isLocked;
@@ -1089,25 +1106,37 @@ function getStudyAtomTimings() {
   };
 }
 
-// ВОСПРОИЗВЕДЕНИЕ ВСТУПЛЕНИЙ (ЗАЧИНОВ)
-function getPreambleItems() {
-  var mode = document.getElementById("selPreambleMode").value;
-  if (mode === "NONE") return [];
-  if (mode === "SINGLE_V") return ["...-"];
-  if (mode === "SERIES_VVV") return ["...-", "...-", "...-"];
-  if (mode === "HST_VTO") return ["...-", "-", "---"]; // ЖТО
-  if (mode === "CALL_VVV_EQ") return ["...-", "...-", "...-", "-...-"]; // VVV =
-  return ["...-"];
+// ВОСПРОИЗВЕДЕНИЕ ВСТУПЛЕНИЙ (ЗАЧИНОВ) И ОКОНЧАНИЙ (КОНЦОВОК)
+var PREAMBLE_CODES = {
+  "NONE": [],
+  "SINGLE_V": ["...-"],
+  "SERIES_VVV": ["...-", "...-", "...-"],
+  "HST_VTO": ["...-", "-", "---"],
+  "CALL_VVV_EQ": ["...-", "...-", "...-", "-...-"]
+};
+
+var POSTAMBLE_CODES = {
+  "NONE": [],
+  "SINGLE_K": ["-.-"],
+  "SERIES_KKK": ["-.-", "-.-", "-.-"],
+  "EQ_PERIOD": ["-...-"],
+  "K_EQ": ["-.-", "-...-"],
+  "AR": [".-.-."],
+  "SK": ["...-.-"]
+};
+
+function getSignalItems(selId, codesByMode) {
+  var el = document.getElementById(selId);
+  var codes = el ? codesByMode[el.value] : null;
+  return codes || [];
 }
 
-function playRadiogramProcess(groups, repeats, charRepeats) {
-  charRepeats = charRepeats || 1;
-  var preambleCodes = getPreambleItems();
-  var pIdx = 0;
+function playSignalChain(codes) {
+  var cIdx = 0;
 
-  function playPreambleChain() {
-    if (pIdx >= preambleCodes.length || !rxActive) return Promise.resolve();
-    var code = preambleCodes[pIdx++];
+  function nextCode() {
+    if (cIdx >= codes.length || !rxActive) return Promise.resolve();
+    var code = codes[cIdx++];
     var s = 0;
 
     function nextSym() {
@@ -1126,15 +1155,26 @@ function playRadiogramProcess(groups, repeats, charRepeats) {
       });
     }
 
-    return nextSym().then(playPreambleChain);
+    return nextSym().then(nextCode);
   }
 
-  return playPreambleChain().then(function () {
-    // Пауза перед началом передачи радиограммы после зачина
-    if (preambleCodes.length > 0 && rxActive) {
-      return sleepRx(1200);
-    }
-  }).then(function () {
+  return nextCode();
+}
+
+// Блок служебных сигналов (зачин/концовка) с последующей технологической паузой
+function playSignalBlock(codes) {
+  if (!codes || codes.length === 0 || !rxActive) return Promise.resolve();
+  return playSignalChain(codes).then(function () {
+    return sleepRx(1200);
+  });
+}
+
+function playRadiogramProcess(groups, repeats, charRepeats) {
+  charRepeats = charRepeats || 1;
+  var preambleCodes = getSignalItems("selPreambleMode", PREAMBLE_CODES);
+  var postambleCodes = getSignalItems("selPostambleMode", POSTAMBLE_CODES);
+
+  return playSignalBlock(preambleCodes).then(function () {
     var g = 0;
     function nextGroup() {
       if (g >= groups.length || !rxActive) return Promise.resolve();
@@ -1192,6 +1232,9 @@ function playRadiogramProcess(groups, repeats, charRepeats) {
       return nextRepeat();
     }
     return nextGroup();
+  }).then(function () {
+    // Окончание (концовка) после передачи радиограммы + технологическая пауза
+    return playSignalBlock(postambleCodes);
   });
 }
 
@@ -1648,14 +1691,18 @@ document.getElementById("btnRxCheck").onclick = function () {
 
 
 /* ==========================================================================
-   МОДУЛЬ: ПЕРЕТАСКИВАНИЕ ГРУПП БЛАНКА (DRAG & DROP БЕЗ ЗАВИСИМОСТЕЙ)
+    МОДУЛЬ: ПЕРЕТАСКИВАНИЕ ГРУПП БЛАНКА (DRAG & DROP БЕЗ ЗАВИСИМОСТЕЙ)
    - захват ячейки мышью за любую часть, кроме поля ввода знаков;
-   - маркер места вставки янтарной полосой (слева/справа от ячейки);
+   - захваченная группа летит за курсором отдельным «дублёром» (ghost);
+   - её ячейка остаётся в бланке слотом: при пересечении границы между
+     ячейками группа переставляется сразу, соседи разъезжаются с анимацией;
    - автоскролл бланка, когда курсор у верхней или нижней кромки;
+   - отмена переноса: ESC, потеря фокуса окна, отпускание кнопки вне окна;
    - клавиатурный дубль: CTRL+стрелки влево/вправо двигают группу;
    - перестановка меняет порядок передачи радиограммы (порядок бланка).
    Требования: только ES5 (var, function), без classList и dataset.
-   Совместимость Gecko 43: mouse-события, getBoundingClientRect, insertBefore.
+   Совместимость Gecko 43: mouse-события, getBoundingClientRect, insertBefore,
+   offsetLeft/offsetTop, requestAnimationFrame.
    ========================================================================== */
 var GRID_DND_MIN_DX = 5;   // мин. смещение мыши для старта перетаскивания, px
 var GRID_DND_EDGE = 26;     // зона автоскролла у кромки бланка, px
@@ -1770,19 +1817,28 @@ function moveGroupByStep(cell, delta) {
 }
 
 /* -------------------------- ПЕРЕТАСКИВАНИЕ МЫШЬЮ --------------------------- */
+/*  Захваченная группа едет за курсором отдельным «дублёром» (ghost), а её
+    настоящая ячейка остаётся в потоке как слот: при пересечении границы между
+    ячейками DOM переставляется сразу, и соседние группы разъезжаются
+    (анимация смещения сделана вручную: transition + transform, ES5).          */
 var dnd = {
-  active: false,    // перетаскивание началось
-  armed: false,     // mousedown зафиксирован, ждём первого смещения
-  cell: null,
-  fromIndex: -1,
+  active: false,   // порог перетаскивания превышен, ghost уже создан
+  armed: false,    // mousedown зафиксирован, ждём первого смещения
+  cell: null,      // перетаскиваемая ячейка (слот в бланке)
+  ghost: null,     // летящая копия, живёт в document.body
+  originIndex: -1, // позиция в момент старта — сюда возвращаем при отмене
+  curIndex: -1,    // текущая позиция в бланке
   startX: 0,
   startY: 0,
-  dropIndex: -1,
+  grabX: 0,        // смещение точки захвата внутри ячейки, px
+  grabY: 0,
   scrollTimer: null,
   edgeDir: 0,
+  shifting: [],    // ячейки с незавершённой анимацией смещения
   onMove: null,
   onUp: null,
-  onBlur: null
+  onBlur: null,
+  onKey: null
 };
 
 function dndClass(cell, name, on) {
@@ -1797,23 +1853,121 @@ function dndClass(cell, name, on) {
   }
 }
 
-function clearDropMarkers() {
+function dndNextFrame(fn) {
+  if (window.requestAnimationFrame) return window.requestAnimationFrame(fn);
+  return window.setTimeout(fn, 16);
+}
+
+// Летящая копия строится вручную (без cloneNode): клон с классами group-cell,
+// group-input-val и char-slot попал бы под селекторы rx-trainer (document-wide)
+// и сломал бы приём/отрисовку. Здесь — только текст и никаких id/полей ввода.
+function dndBuildGhost(cell) {
+  var ghost = document.createElement("div");
+  ghost.className = "group-drag-ghost";
+
+  var badge = cell.querySelector(".group-cell-idx");
+  if (badge) {
+    var b = document.createElement("span");
+    b.className = "group-drag-idx";
+    b.textContent = badge.textContent;
+    ghost.appendChild(b);
+  }
+  var inp = cell.querySelector(".group-input-val");
+  if (inp) {
+    var t = document.createElement("div");
+    t.className = "group-drag-text";
+    t.textContent = inp.value;
+    ghost.appendChild(t);
+  }
+  var disp = cell.querySelector(".group-chars-display");
+  if (disp && disp.textContent) {
+    var l = document.createElement("div");
+    l.className = "group-drag-lock";
+    l.textContent = disp.textContent;
+    ghost.appendChild(l);
+  }
+  return ghost;
+}
+
+function dndShowGhost(x, y) {
+  if (!dnd.cell || !document.body) return;
+  if (!dnd.ghost) {
+    var rect = dnd.cell.getBoundingClientRect();
+    dnd.ghost = dndBuildGhost(dnd.cell);
+    dnd.ghost.style.width = rect.width + "px";
+    document.body.appendChild(dnd.ghost);
+    dnd.grabX = dnd.startX - rect.left;
+    dnd.grabY = dnd.startY - rect.top;
+  }
+  dnd.ghost.style.left = Math.round(x - dnd.grabX) + "px";
+  dnd.ghost.style.top = Math.round(y - dnd.grabY) + "px";
+}
+
+function dndRemoveGhost() {
+  if (dnd.ghost && dnd.ghost.parentNode) dnd.ghost.parentNode.removeChild(dnd.ghost);
+  dnd.ghost = null;
+}
+
+// --- анимация разъезда соседей (FLIP вручную, без transitionend) -------------
+function dndClearShifts() {
+  for (var i = 0; i < dnd.shifting.length; i++) {
+    dndClass(dnd.shifting[i], "dnd-shifting", false);
+    dnd.shifting[i].style.transform = "";
+  }
+  dnd.shifting = [];
+}
+
+function dndMarkCells() {
   var cells = getGroupCells();
   for (var i = 0; i < cells.length; i++) {
-    dndClass(cells[i], "drop-before", false);
-    dndClass(cells[i], "drop-after", false);
+    if (cells[i] === dnd.cell) { cells[i].__dndMark = null; continue; }
+    cells[i].__dndMark = { left: cells[i].offsetLeft, top: cells[i].offsetTop };
   }
 }
 
-function showDropMarker(index) {
-  clearDropMarkers();
-  var cells = getGroupCells();
-  if (cells.length === 0) return;
-  if (index >= cells.length) {
-    dndClass(cells[cells.length - 1], "drop-after", true);
-  } else {
-    dndClass(cells[index], "drop-before", true);
+function dndAnimateShift() {
+  var cells = getGroupCells(), list = [], i, c, dx, dy;
+  for (i = 0; i < cells.length; i++) {
+    c = cells[i];
+    if (!c.__dndMark) continue;
+    dx = c.__dndMark.left - c.offsetLeft;
+    dy = c.__dndMark.top - c.offsetTop;
+    c.__dndMark = null;
+    if (!dx && !dy) continue;
+    c.style.transform = "translate(" + dx + "px," + dy + "px)"; // без transition — без рывка
+    list.push(c);
   }
+  if (!list.length) return;
+
+  dndClearShifts();
+  dnd.shifting = list;
+  dndNextFrame(function () {
+    for (var j = 0; j < list.length; j++) {
+      if (list[j].parentNode) dndClass(list[j], "dnd-shifting", true);
+      list[j].style.transform = "";
+    }
+  });
+}
+
+// Переставить группу «на лету»: пересечение границы ячеек сразу двигает DOM,
+// поэтому соседи разъезжаются в момент нахождения курсора над новым местом.
+function dndReorderTo(index) {
+  if (!dnd.cell || index === dnd.curIndex) return;
+  dndMarkCells();
+  if (moveGroupToIndex(dnd.cell, index) === -1) {
+    dndClearShifts();
+    return;
+  }
+  dnd.curIndex = cellIndexInList(getGroupCells(), dnd.cell);
+  dndAnimateShift();
+}
+
+function dndRevert() {
+  if (!dnd.cell || dnd.originIndex === -1) return;
+  if (cellIndexInList(getGroupCells(), dnd.cell) === dnd.originIndex) return;
+  dndMarkCells();
+  moveGroupToIndex(dnd.cell, dnd.originIndex);
+  dndAnimateShift();
 }
 
 function applyAutoScroll(dir) {
@@ -1846,29 +2000,29 @@ function dndEdgeDir(clientY) {
   return 0;
 }
 
-// Завершение перетаскивания: commit = true — применить перестановку
+// Завершение перетаскивания: commit = true — оставить новый порядок.
 function dndEnd(commit) {
   stopAutoScroll();
-  clearDropMarkers();
+  if (!commit) dndRevert();
+  dndRemoveGhost();
+  dndClearShifts();
   dndClass(dnd.cell, "drag-source", false);
   dndClass(getGroupsContainer(), "dnd-active", false);
-
-  if (commit && dnd.active && dnd.dropIndex !== -1 && dnd.dropIndex !== dnd.fromIndex) {
-    moveGroupToIndex(dnd.cell, dnd.dropIndex);
-  }
 
   if (dnd.onMove) document.removeEventListener("mousemove", dnd.onMove, false);
   if (dnd.onUp) document.removeEventListener("mouseup", dnd.onUp, false);
   if (dnd.onBlur) window.removeEventListener("blur", dnd.onBlur, false);
+  if (dnd.onKey) document.removeEventListener("keydown", dnd.onKey, false);
 
   dnd.active = false;
   dnd.armed = false;
   dnd.cell = null;
-  dnd.fromIndex = -1;
-  dnd.dropIndex = -1;
+  dnd.originIndex = -1;
+  dnd.curIndex = -1;
   dnd.onMove = null;
   dnd.onUp = null;
   dnd.onBlur = null;
+  dnd.onKey = null;
 }
 
 function initGroupsDragAndDrop() {
@@ -1876,8 +2030,8 @@ function initGroupsDragAndDrop() {
   if (!container) return;
 
   container.addEventListener("mousedown", function (e) {
-    if (rxActive) return;                                // во время приёма бланк заблокирован
-    if (e.button !== 0) return;                          // только ЛКМ
+    if (rxActive) return;                                 // во время приёма бланк заблокирован
+    if (e.button !== 0) return;                           // только ЛКМ
     var cell = findGroupCell(e.target);
     if (!cell || isAddGroupCell(cell)) return;
     if (e.target && e.target.tagName === "INPUT") return; // поле ввода знаков не таскаем
@@ -1885,10 +2039,10 @@ function initGroupsDragAndDrop() {
     dnd.armed = true;
     dnd.active = false;
     dnd.cell = cell;
-    dnd.fromIndex = cellIndexInList(getGroupCells(), cell);
+    dnd.curIndex = cellIndexInList(getGroupCells(), cell);
+    dnd.originIndex = dnd.curIndex;
     dnd.startX = e.clientX;
     dnd.startY = e.clientY;
-    dnd.dropIndex = dnd.fromIndex;
 
     dnd.onMove = function (ev) {
       if (!dnd.armed) return;
@@ -1905,20 +2059,24 @@ function initGroupsDragAndDrop() {
       }
       if (ev.preventDefault) ev.preventDefault();
 
-      dnd.dropIndex = computeDropIndex(getGroupCells(), ev.clientX, ev.clientY);
-      // Исходную позицию не подсвечиваем: возврат на место = отмена переноса
-      if (dnd.dropIndex === dnd.fromIndex) clearDropMarkers();
-      else showDropMarker(dnd.dropIndex);
-
+      dndShowGhost(ev.clientX, ev.clientY);
+      dndReorderTo(computeDropIndex(getGroupCells(), ev.clientX, ev.clientY));
       applyAutoScroll(dndEdgeDir(ev.clientY));
     };
 
     dnd.onUp = function () { dndEnd(true); };
     dnd.onBlur = function () { dndEnd(false); };
+    dnd.onKey = function (ev) {
+      var kc = ev.keyCode || ev.which;
+      if (kc !== 27) return;                               // ESC — отменить перенос
+      if (ev.preventDefault) ev.preventDefault();
+      dndEnd(false);
+    };
 
     document.addEventListener("mousemove", dnd.onMove, false);
     document.addEventListener("mouseup", dnd.onUp, false);
     window.addEventListener("blur", dnd.onBlur, false);
+    document.addEventListener("keydown", dnd.onKey, false);
   }, false);
 
   // Клавиатурный дубль: CTRL+вправо — ниже по списку, CTRL+влево — выше

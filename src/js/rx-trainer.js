@@ -2,7 +2,7 @@
    МОДУЛЬ: ПРИЁМ НА СЛУХ И КОНТРОЛЬ РАДИОГРАММ (RX)
    - блокировка/подсветка групп и знаков, режим "приём вслепую";
    - нормирование интервалов: напев / межбуквенная / межгрупповая пауза;
-   - генерация и передача радиограмм (зачин, Фарнсворт, повторы);
+   - генерация и передача радиограмм (зачин, концовка, Фарнсворт, повторы);
    - валидация ввода, сетка групп 5 знаков, пресеты, выравнивание
      Нидлмана — Вунша (alignSequences) и выставление оценки.
    ========================================================================== */
@@ -42,6 +42,7 @@ function setTrainerLocked(isLocked) {
   document.getElementById("groupRepeat").disabled = isLocked;
   document.getElementById("charRepeat").disabled = isLocked;
   document.getElementById("selPreambleMode").disabled = isLocked;
+  document.getElementById("selPostambleMode").disabled = isLocked;
   document.getElementById("btnGenGroups").disabled = isLocked;
   document.getElementById("monoCharInput").disabled = isLocked;
   document.getElementById("monoCharCount").disabled = isLocked;
@@ -125,25 +126,37 @@ function getStudyAtomTimings() {
   };
 }
 
-// ВОСПРОИЗВЕДЕНИЕ ВСТУПЛЕНИЙ (ЗАЧИНОВ)
-function getPreambleItems() {
-  var mode = document.getElementById("selPreambleMode").value;
-  if (mode === "NONE") return [];
-  if (mode === "SINGLE_V") return ["...-"];
-  if (mode === "SERIES_VVV") return ["...-", "...-", "...-"];
-  if (mode === "HST_VTO") return ["...-", "-", "---"]; // ЖТО
-  if (mode === "CALL_VVV_EQ") return ["...-", "...-", "...-", "-...-"]; // VVV =
-  return ["...-"];
+// ВОСПРОИЗВЕДЕНИЕ ВСТУПЛЕНИЙ (ЗАЧИНОВ) И ОКОНЧАНИЙ (КОНЦОВОК)
+var PREAMBLE_CODES = {
+  "NONE": [],
+  "SINGLE_V": ["...-"],
+  "SERIES_VVV": ["...-", "...-", "...-"],
+  "HST_VTO": ["...-", "-", "---"],
+  "CALL_VVV_EQ": ["...-", "...-", "...-", "-...-"]
+};
+
+var POSTAMBLE_CODES = {
+  "NONE": [],
+  "SINGLE_K": ["-.-"],
+  "SERIES_KKK": ["-.-", "-.-", "-.-"],
+  "EQ_PERIOD": ["-...-"],
+  "K_EQ": ["-.-", "-...-"],
+  "AR": [".-.-."],
+  "SK": ["...-.-"]
+};
+
+function getSignalItems(selId, codesByMode) {
+  var el = document.getElementById(selId);
+  var codes = el ? codesByMode[el.value] : null;
+  return codes || [];
 }
 
-function playRadiogramProcess(groups, repeats, charRepeats) {
-  charRepeats = charRepeats || 1;
-  var preambleCodes = getPreambleItems();
-  var pIdx = 0;
+function playSignalChain(codes) {
+  var cIdx = 0;
 
-  function playPreambleChain() {
-    if (pIdx >= preambleCodes.length || !rxActive) return Promise.resolve();
-    var code = preambleCodes[pIdx++];
+  function nextCode() {
+    if (cIdx >= codes.length || !rxActive) return Promise.resolve();
+    var code = codes[cIdx++];
     var s = 0;
 
     function nextSym() {
@@ -162,15 +175,26 @@ function playRadiogramProcess(groups, repeats, charRepeats) {
       });
     }
 
-    return nextSym().then(playPreambleChain);
+    return nextSym().then(nextCode);
   }
 
-  return playPreambleChain().then(function () {
-    // Пауза перед началом передачи радиограммы после зачина
-    if (preambleCodes.length > 0 && rxActive) {
-      return sleepRx(1200);
-    }
-  }).then(function () {
+  return nextCode();
+}
+
+// Блок служебных сигналов (зачин/концовка) с последующей технологической паузой
+function playSignalBlock(codes) {
+  if (!codes || codes.length === 0 || !rxActive) return Promise.resolve();
+  return playSignalChain(codes).then(function () {
+    return sleepRx(1200);
+  });
+}
+
+function playRadiogramProcess(groups, repeats, charRepeats) {
+  charRepeats = charRepeats || 1;
+  var preambleCodes = getSignalItems("selPreambleMode", PREAMBLE_CODES);
+  var postambleCodes = getSignalItems("selPostambleMode", POSTAMBLE_CODES);
+
+  return playSignalBlock(preambleCodes).then(function () {
     var g = 0;
     function nextGroup() {
       if (g >= groups.length || !rxActive) return Promise.resolve();
@@ -228,6 +252,9 @@ function playRadiogramProcess(groups, repeats, charRepeats) {
       return nextRepeat();
     }
     return nextGroup();
+  }).then(function () {
+    // Окончание (концовка) после передачи радиограммы + технологическая пауза
+    return playSignalBlock(postambleCodes);
   });
 }
 

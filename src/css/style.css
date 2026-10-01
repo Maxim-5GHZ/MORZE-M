@@ -39,17 +39,18 @@ header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-
 .inputs-2col{display:-moz-box;display:-webkit-box;display:flex;margin:0 -5px 8px -5px}
 .inputs-2col>.form-group:first-child{-moz-box-flex:1.15;flex:1.15;margin:0 5px}
 .inputs-2col>.form-group:last-child{-moz-box-flex:0.85;flex:0.85;margin:0 5px}
-.controls-row-5{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;-moz-box-align:end;align-items:flex-end;margin:0 -4px 10px -4px}
-.controls-row-5>.form-group{margin:4px;box-sizing:border-box}
-.controls-row-5>.form-group:nth-child(1){flex:1.6 1 110px}
-.controls-row-5>.form-group:nth-child(2){flex:1.4 1 95px}
-.controls-row-5>.form-group:nth-child(3){flex:1.8 1 120px}
-.controls-row-5>.form-group:nth-child(4){flex:1.4 1 100px}
-.controls-row-5>.form-group:nth-child(5){flex:2.4 1 160px}
-.controls-row-5>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
+.controls-row-6{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;-moz-box-align:end;align-items:flex-end;margin:0 -4px 10px -4px}
+.controls-row-6>.form-group{margin:4px;box-sizing:border-box}
+.controls-row-6>.form-group:nth-child(1){flex:1.6 1 110px}
+.controls-row-6>.form-group:nth-child(2){flex:1.4 1 95px}
+.controls-row-6>.form-group:nth-child(3){flex:1.8 1 120px}
+.controls-row-6>.form-group:nth-child(4){flex:1.4 1 100px}
+.controls-row-6>.form-group:nth-child(5){flex:2.4 1 160px}
+.controls-row-6>.form-group:nth-child(6){flex:2.2 1 150px}
+.controls-row-6>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
 .grid-2{display:-moz-box;display:-webkit-box;display:flex;margin:0 -6px}
 .grid-2>.panel{-moz-box-flex:1;flex:1 1 0;margin:0 6px 12px 6px;min-width:0}
-@media(max-width:768px){.inputs-2col,.grid-2,.controls-row-5{display:block;margin:0 0 8px 0}.inputs-2col>.form-group,.grid-2>.panel,.controls-row-5>.form-group,.controls-row-5>.btn-gen{margin:0 0 8px 0;width:100%!important}}
+@media(max-width:768px){.inputs-2col,.grid-2,.controls-row-6{display:block;margin:0 0 8px 0}.inputs-2col>.form-group,.grid-2>.panel,.controls-row-6>.form-group,.controls-row-6>.btn-gen{margin:0 0 8px 0;width:100%!important}}
 .form-group{display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column}
 .form-group label{font-size:10px;font-weight:bold;color:var(--mil-dim);margin-bottom:4px}
 input[type="text"],input[type="number"],select,textarea{background:var(--screen-bg);border:1px solid #33422d;color:var(--mil-green);padding:5px 8px;font-family:inherit;font-size:12px;font-weight:bold;outline:none;width:100%}
@@ -72,10 +73,13 @@ input:focus:not(:disabled),select:focus:not(:disabled),textarea:focus:not(:disab
 .btn-mono-insert:hover:not(:disabled){background:#394d33;border-color:var(--mil-amber)}
 .groups-grid{display:-moz-box;display:-webkit-box;display:flex;flex-wrap:wrap;max-height:220px;overflow-y:auto;padding:4px;background:var(--screen-bg);border:1px solid #33422d;margin:0 -2px}
 .group-cell{flex:0 0 calc(10% - 6px);min-width:90px;margin:3px;background:#171f14;border:1px solid #2e3b28;padding:3px 2px;text-align:center;position:relative;cursor:move}
+.group-cell.dnd-shifting{transition:transform .16s ease-out}
 .groups-grid.dnd-active{-moz-user-select:none;user-select:none}
-.group-cell.drag-source{opacity:.45;background:#242a1c!important;border-color:var(--mil-amber)!important;cursor:move}
-.group-cell.drop-before{box-shadow:inset 3px 0 0 var(--mil-amber)}
-.group-cell.drop-after{box-shadow:inset -3px 0 0 var(--mil-amber)}
+.groups-grid.dnd-active .group-cell.drag-source{opacity:.4;background:#12180f!important;border:1px dashed var(--mil-amber)!important}
+.group-drag-ghost{position:fixed;z-index:9999;pointer-events:none;margin:0;padding:3px 2px;background:#1d2417;border:1px solid var(--mil-amber);box-shadow:0 6px 16px rgba(0,0,0,.7);text-align:center;opacity:.95;cursor:move}
+.group-drag-idx{display:block;font-size:8px;color:var(--mil-dim);margin-bottom:2px}
+.group-drag-text{color:var(--mil-green);font-size:13px;font-weight:bold;letter-spacing:2px;line-height:18px;white-space:pre}
+.group-drag-lock{color:var(--mil-dim);font-size:8px;letter-spacing:1px;line-height:14px;white-space:pre}
 @media(max-width:900px){.group-cell{flex:0 0 calc(20% - 6px)}}
 @media(max-width:600px){.group-cell{flex:0 0 calc(33.33% - 6px)}}
 .group-cell.locked{background:#11170f;border-color:#20291c;cursor:default}

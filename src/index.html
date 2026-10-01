@@ -68,7 +68,7 @@
         </div>
       </div>
       <div class="error-banner" id="teacherErrorBox"></div>
-      <div class="controls-row-5">
+      <div class="controls-row-6">
         <div class="form-group">
           <label>Размер группы:</label>
           <select id="groupLength" onchange="uiGenerateGroupsTable()">
@@ -108,6 +108,18 @@
             <option value="SERIES_VVV">Серия Ж Ж Ж (...-  ...-  ...-)</option>
             <option value="HST_VTO">Норматив СРТ: ЖТО (...-  -  ---)</option>
             <option value="CALL_VVV_EQ">Циркулярное: VVV = (...- ...- ...-  -...-)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Окончание (концовка):</label>
+          <select id="selPostambleMode">
+            <option value="NONE">Без окончания</option>
+            <option value="SINGLE_K" selected>Просто К (-.-)</option>
+            <option value="SERIES_KKK">Серия К К К (-.-  -.-  -.-)</option>
+            <option value="EQ_PERIOD">Знак «точка» = (-...-)</option>
+            <option value="K_EQ">К и точка (-.-  -...-)</option>
+            <option value="AR">Международное AR (.-.-.)</option>
+            <option value="SK">Международное SK (...-.-)</option>
           </select>
         </div>
         <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()"><span>⟳ </span> Сформировать</button>
