@@ -110,32 +110,201 @@ var rngFarn = document.getElementById("rngFarnSpeed");
 var rngGrpPause = document.getElementById("rngGroupPause");
 var rngStudy = document.getElementById("rngStudySpeed");
 
-function updateSpeedControls() {
-  var charVal = parseInt(rngChar.value, 10);
-  rngFarn.max = charVal;
-  if (parseInt(rngFarn.value, 10) > charVal) {
-    rngFarn.value = charVal;
-    setUiText("lblFarnSpeed", charVal + " зн/мин");
+// РЕЖИМ ОТОБРАЖЕНИЯ СКОРОСТИ: 'WPM' - знаки в минуту, 'MS' - длительность точки в мс.
+// speedCharWpm / speedFarnWpm / speedGrpMult - НОРМИЗОВАННОЕ состояние движка, всегда
+// в зн/мин и в коэффициентах пауз. Поля ввода - лишь представление этого состояния
+// в выбранных единицах, поэтому переключение тумблера не влияет на звук.
+var speedUnitMode = 'WPM';
+var speedCharWpm = 70, speedFarnWpm = 50, speedGrpMult = 1.0;
+var CHAR_WPM_MIN = 30, CHAR_WPM_MAX = 200;
+var FARN_WPM_MIN = 20;
+var GRP_MULT_MIN = 1.0, GRP_MULT_MAX = 5.0;
+// Поле ввода, которое в данный момент редактируется: его value не перезаписывается
+// при перерисовке, иначе стрелки числового поля «прыгают» через шаг.
+var speedEditingEl = null;
+
+// Стандарт PARIS в конвенции прибора: длительность точки T = 6000 / W (мс).
+// Обратная формула: W = 6000 / T. Это ЕДИНСТВЕННЫЙ источник пересчёта единиц.
+function wpmToDotMs(wpm) { return 6000.0 / wpm; }
+function dotMsToWpm(ms) { return 6000.0 / ms; }
+function clampNum(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+// Межгрупповая пауза в мс по той же модели, что и getLiveAtomTimings().
+function groupPauseMsByMult(mult) {
+  return Math.max(0, wpmToDotMs(speedFarnWpm) * 7 * mult - wpmToDotMs(speedCharWpm));
+}
+
+// Приведение нормализованного состояния к допустимым пределам + защита связки
+// Фарнсворта. ОКРУГЛЕНИЯ ЗДЕСЬ НАМЕРЕННО НЕТ: состояние хранит точное
+// значение, иначе переключение «зн/мин <-> мс» перестаёт быть чистой
+// конвертацией (70.588 зн/мин превратился бы в 71, а обратно - в 85 мс
+// вместо исходных 85.71). Округление живёт только в отображении.
+function normalizeSpeedState() {
+  if (!(speedCharWpm > 0)) speedCharWpm = 70;
+  speedCharWpm = clampNum(speedCharWpm, CHAR_WPM_MIN, CHAR_WPM_MAX);
+  if (!(speedFarnWpm > 0)) speedFarnWpm = FARN_WPM_MIN;
+  if (speedFarnWpm > speedCharWpm) speedFarnWpm = speedCharWpm;
+  speedFarnWpm = clampNum(speedFarnWpm, FARN_WPM_MIN, speedCharWpm);
+  if (!(speedGrpMult > 0)) speedGrpMult = GRP_MULT_MIN;
+  speedGrpMult = clampNum(speedGrpMult, GRP_MULT_MIN, GRP_MULT_MAX);
+}
+
+// Пересчёт состояния -> поля ввода (min/max/step/value) и текстовые метки.
+function renderSpeedControls() {
+  normalizeSpeedState();
+  var msMode = speedUnitMode === 'MS';
+  var dotMs = wpmToDotMs(speedCharWpm);
+  var farnDotMs = wpmToDotMs(speedFarnWpm);
+
+  rngChar.min = msMode ? Math.round(wpmToDotMs(CHAR_WPM_MAX)) : CHAR_WPM_MIN;
+  rngChar.max = msMode ? Math.round(wpmToDotMs(CHAR_WPM_MIN)) : CHAR_WPM_MAX;
+
+  if (msMode) {
+    // Режим ТОЧКА - инверсия шкалы: меньше миллисекунд, выше скорость.
+    // Поле, которое сейчас редактируется, не перезаписываем: иначе браузерные
+    // стрелки «прыгают» (поле уводит значение мимо того числа, что ввёл user).
+    if (rngChar !== speedEditingEl) rngChar.value = Math.round(dotMs);
+    rngFarn.min = Math.round(dotMs);            // Фарнсворт не быстрее посылки
+    rngFarn.max = Math.round(wpmToDotMs(FARN_WPM_MIN));
+    if (rngFarn !== speedEditingEl) rngFarn.value = Math.round(farnDotMs);
+    rngGrpPause.min = Math.round(groupPauseMsByMult(GRP_MULT_MIN));  // пауза короче x1.0 невозможна
+    rngGrpPause.max = Math.round(groupPauseMsByMult(GRP_MULT_MAX));
+    if (rngGrpPause !== speedEditingEl) {
+      rngGrpPause.value = clampNum(Math.round(groupPauseMsByMult(speedGrpMult)), rngGrpPause.min, rngGrpPause.max);
+    }
+    setUiText("lblCharSpeed", Math.round(dotMs) + " мс");
+    setUiText("lblFarnSpeed", Math.round(farnDotMs) + " мс");
+    setUiText("lblGroupPause", Math.round(groupPauseMsByMult(speedGrpMult)) + " мс");
+  } else {
+    // Поля показывают округлённое представление, состояние остаётся точным.
+    rngChar.value = Math.round(speedCharWpm);
+    rngFarn.min = FARN_WPM_MIN;
+    rngFarn.max = Math.round(speedCharWpm);
+    rngFarn.value = Math.round(speedFarnWpm);
+    rngGrpPause.min = GRP_MULT_MIN * 10;
+    rngGrpPause.max = GRP_MULT_MAX * 10;
+    rngGrpPause.value = Math.round(speedGrpMult * 10);
+    var mTxt = speedGrpMult.toFixed(1);
+    setUiText("lblCharSpeed", Math.round(speedCharWpm) + " зн/мин");
+    setUiText("lblFarnSpeed", Math.round(speedFarnWpm) + " зн/мин");
+    setUiText("lblGroupPause", "x" + mTxt + (mTxt === "1.0" ? " (стандарт)" : ""));
   }
-  setUiText("lblCharSpeed", charVal + " зн/мин");
+  updateOverallSpeed();
   throttleApply();
 }
 
-rngChar.oninput = updateSpeedControls;
-rngChar.onchange = updateSpeedControls;
+// Разбор значения поля ввода -> нормализованное состояние (без перерисовки).
+// Возвращает false, если в поле пусто или значение не число.
+// Конвертация ЕДИНСТВЕННАЯ И ТОЧНАЯ: мс -> зн/мин по формуле W = 6000 / T,
+// без округления, поэтому переключение единиц ничего не меняет по существу.
+function readSpeedInput(el, kind) {
+  var v = parseFloat(el.value);
+  if (isNaN(v) || el.value === "") return false;
+  if (speedUnitMode === 'MS') {
+    if (kind === 'char') speedCharWpm = dotMsToWpm(v);
+    else if (kind === 'farn') speedFarnWpm = dotMsToWpm(v);
+    else speedGrpMult = (v + wpmToDotMs(speedCharWpm)) / (7 * wpmToDotMs(speedFarnWpm));
+  } else {
+    if (kind === 'char') speedCharWpm = v;
+    else if (kind === 'farn') speedFarnWpm = v;
+    else speedGrpMult = v / 10;
+  }
+  return true;
+}
 
-rngFarn.oninput = function () {
-  setUiText("lblFarnSpeed", rngFarn.value + " зн/мин");
-  throttleApply();
-};
+function applySpeedInput(el, kind) {
+  speedEditingEl = el;
+  readSpeedInput(el, kind);
+  renderSpeedControls();
+  speedEditingEl = null;
+}
+
+function toggleSpeedUnit() {
+  speedUnitMode = speedUnitMode === 'WPM' ? 'MS' : 'WPM';
+  var tg = document.getElementById("unitToggle");
+  var oW = document.getElementById("unitToggleOptWpm");
+  var oM = document.getElementById("unitToggleOptMs");
+  if (tg) {
+    if (speedUnitMode === 'MS') tg.className = tg.className.replace(/\s*ms\b/, "") + " ms";
+    else tg.className = tg.className.replace(/\s*ms\b/, "");
+  }
+  if (oW) oW.className = "unit-toggle-opt" + (speedUnitMode === 'WPM' ? " on" : "");
+  if (oM) oM.className = "unit-toggle-opt" + (speedUnitMode === 'MS' ? " on" : "");
+  // Смена единиц - чистая конвертация: сбрасываем «редактируемое» поле, чтобы
+  // значения в полях пересчитались из того же самого состояния.
+  speedEditingEl = null;
+  renderSpeedControls();
+}
+
+// ПЕРЕКЛЮЧЕНИЕ «ЧИСЛОВОЙ ВВОД / ПОЛЗУНКИ» в блоке «Скоростные нормативы».
+// Набор полей один и тот же - меняется только тип элемента (number <-> range),
+// поэтому обработчики, границы и подписи остаются теми же. Состояние движка
+// при переключении не меняется: перед сменой типа незакоммиченное значение поля
+// переносится в нормализованное состояние.
+var SPEED_FIELDS = [
+  { id: "rngCharSpeed", kind: "char" },
+  { id: "rngFarnSpeed", kind: "farn" },
+  { id: "rngGroupPause", kind: "grp" }
+];
+var speedInputIsRange = false;
+
+function applySpeedInputType() {
+  for (var i = 0; i < SPEED_FIELDS.length; i++) {
+    var el = document.getElementById(SPEED_FIELDS[i].id);
+    if (!el) continue;
+    if (speedInputIsRange) {
+      el.type = "range";
+      el.className = el.className.replace(/\s*\bnum-field\b/g, "");
+      el.removeAttribute("inputmode");
+    } else {
+      el.type = "number";
+      if (!/\bnum-field\b/.test(el.className)) el.className = (el.className + " num-field").replace(/^\s+/, "");
+      el.setAttribute("inputmode", "numeric");
+    }
+  }
+  var btn = document.getElementById("toggleInputTypeBtn");
+  if (btn) {
+    btn.className = "toggle-input-btn" + (speedInputIsRange ? " active" : "");
+    btn.textContent = speedInputIsRange ? "СТРЕЛОЧКИ" : "ПОЛЗУНКИ";
+    btn.title = speedInputIsRange
+      ? "Вернуть числовой ввод (стрелочки)"
+      : "Переключить между числовым вводом (стрелочки) и ползунками (range)";
+  }
+  renderSpeedControls();
+}
+
+function toggleSpeedInputType() {
+  // Значение, введённое в числовое поле, фиксируем до смены типа элемента:
+  // смена type может сбросить несохранённый текст поля.
+  if (!speedInputIsRange) {
+    for (var i = 0; i < SPEED_FIELDS.length; i++) {
+      var el = document.getElementById(SPEED_FIELDS[i].id);
+      if (el) readSpeedInput(el, SPEED_FIELDS[i].kind);
+    }
+  }
+  speedInputIsRange = !speedInputIsRange;
+  speedEditingEl = null;   // тип элемента сменился - значения надо пересчитать
+  applySpeedInputType();
+}
+
+rngChar.oninput = function () { applySpeedInput(this, 'char'); };
+rngChar.onchange = rngChar.oninput;
+
+rngFarn.oninput = function () { applySpeedInput(this, 'farn'); };
 rngFarn.onchange = rngFarn.oninput;
 
-rngGrpPause.oninput = function () {
-  var mult = (parseFloat(this.value) / 10).toFixed(1);
-  var suffix = mult === "1.0" ? " (стандарт)" : "";
-  setUiText("lblGroupPause", "x" + mult + suffix);
-};
+rngGrpPause.oninput = function () { applySpeedInput(this, 'grp'); };
 rngGrpPause.onchange = rngGrpPause.oninput;
+
+// Повторы групп и знаков тоже меняют общую скорость (повтор знака - акустический,
+// он занимает время передачи, поэтому входит в расчёт).
+["groupRepeat", "charRepeat"].forEach(function (id) {
+  var sel = document.getElementById(id);
+  if (!sel) return;
+  var h = function () { updateOverallSpeed(); };
+  sel.onchange = h;
+  sel.oninput = h;
+});
 
 if (rngStudy) {
   rngStudy.oninput = function() {
@@ -247,4 +416,6 @@ uiGenerateGroupsTable();
 initGroupsDragAndDrop();
 refreshAllAutoGrows();
 initRampDropdown();
+applySpeedInputType();     // согласует тип полей ввода с подписью на кнопке
+renderSpeedControls();   // нормализует стартовые значения и заполняет поля ввода
 requestAnimationFrame(renderUndulator);

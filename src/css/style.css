@@ -117,6 +117,18 @@ input[type="range"]{-moz-appearance:none;background:transparent;width:100%;heigh
 input[type="range"]::-moz-range-track{background:#11180f;border:1px solid #33422d;height:6px}
 input[type="range"]::-moz-range-thumb{background:var(--mil-amber);border:1px solid #ffe082;height:16px;width:12px;border-radius:0;cursor:pointer}
 input[type="range"]::-moz-range-progress{background:#2e4527;height:6px}
+.num-field{text-align:right;color:var(--mil-amber)!important;font-size:13px!important;letter-spacing:1px;cursor:text}
+.num-field:hover:not(:disabled){border-color:#4a5c44}
+.unit-toggle{position:relative;display:-moz-box;display:-webkit-box;display:flex;height:24px;margin-bottom:10px;background:var(--screen-bg);border:1px solid #33422d;cursor:pointer;overflow:hidden}
+.unit-toggle-thumb{position:absolute;top:1px;bottom:1px;left:1px;width:calc(50% - 1px);background:#2f4526;border:1px solid var(--mil-amber);box-shadow:inset 1px 1px 0px #4a6a3c}
+.unit-toggle.ms .unit-toggle-thumb{left:calc(50% + 1px)}
+.unit-toggle-opt{position:relative;display:-moz-box;display:-webkit-box;display:flex;flex:1;-moz-box-align:center;-webkit-box-align:center;align-items:center;-moz-box-pack:center;-webkit-box-pack:center;justify-content:center;font-size:9px;font-weight:bold;letter-spacing:.5px;color:var(--mil-dim)}
+.unit-toggle-opt.on{color:var(--mil-amber)}
+.speed-toggles{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center;margin-bottom:10px}
+.speed-toggles .unit-toggle{margin-bottom:0;-moz-box-flex:1;-webkit-box-flex:1;flex:1}
+.toggle-input-btn{height:24px;margin-left:6px;background:var(--btn-base);border:1px solid var(--btn-border);color:var(--mil-dim);font-family:inherit;font-size:9px;font-weight:bold;padding:0 8px;cursor:pointer;white-space:nowrap}
+.toggle-input-btn:hover:not(:disabled){background:var(--btn-hover);border-color:var(--mil-amber);color:var(--mil-amber)}
+.toggle-input-btn.active{color:var(--mil-amber);border-color:var(--mil-amber)}
 .noise-box{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;background:#151c12;border:1px solid #303d2a;padding:7px 10px;margin-bottom:10px;cursor:pointer}
 .noise-box input[type="checkbox"]{margin:0 10px 0 0;width:auto}
 .action-btns{display:-moz-box;display:-webkit-box;display:flex;height:36px;margin:0 -4px}

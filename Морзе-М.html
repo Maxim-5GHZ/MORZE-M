@@ -132,6 +132,18 @@ input[type="range"]{-moz-appearance:none;background:transparent;width:100%;heigh
 input[type="range"]::-moz-range-track{background:#11180f;border:1px solid #33422d;height:6px}
 input[type="range"]::-moz-range-thumb{background:var(--mil-amber);border:1px solid #ffe082;height:16px;width:12px;border-radius:0;cursor:pointer}
 input[type="range"]::-moz-range-progress{background:#2e4527;height:6px}
+.num-field{text-align:right;color:var(--mil-amber)!important;font-size:13px!important;letter-spacing:1px;cursor:text}
+.num-field:hover:not(:disabled){border-color:#4a5c44}
+.unit-toggle{position:relative;display:-moz-box;display:-webkit-box;display:flex;height:24px;margin-bottom:10px;background:var(--screen-bg);border:1px solid #33422d;cursor:pointer;overflow:hidden}
+.unit-toggle-thumb{position:absolute;top:1px;bottom:1px;left:1px;width:calc(50% - 1px);background:#2f4526;border:1px solid var(--mil-amber);box-shadow:inset 1px 1px 0px #4a6a3c}
+.unit-toggle.ms .unit-toggle-thumb{left:calc(50% + 1px)}
+.unit-toggle-opt{position:relative;display:-moz-box;display:-webkit-box;display:flex;flex:1;-moz-box-align:center;-webkit-box-align:center;align-items:center;-moz-box-pack:center;-webkit-box-pack:center;justify-content:center;font-size:9px;font-weight:bold;letter-spacing:.5px;color:var(--mil-dim)}
+.unit-toggle-opt.on{color:var(--mil-amber)}
+.speed-toggles{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center;margin-bottom:10px}
+.speed-toggles .unit-toggle{margin-bottom:0;-moz-box-flex:1;-webkit-box-flex:1;flex:1}
+.toggle-input-btn{height:24px;margin-left:6px;background:var(--btn-base);border:1px solid var(--btn-border);color:var(--mil-dim);font-family:inherit;font-size:9px;font-weight:bold;padding:0 8px;cursor:pointer;white-space:nowrap}
+.toggle-input-btn:hover:not(:disabled){background:var(--btn-hover);border-color:var(--mil-amber);color:var(--mil-amber)}
+.toggle-input-btn.active{color:var(--mil-amber);border-color:var(--mil-amber)}
 .noise-box{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;align-items:center;background:#151c12;border:1px solid #303d2a;padding:7px 10px;margin-bottom:10px;cursor:pointer}
 .noise-box input[type="checkbox"]{margin:0 10px 0 0;width:auto}
 .action-btns{display:-moz-box;display:-webkit-box;display:flex;height:36px;margin:0 -4px}
@@ -218,8 +230,8 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
       <div class="presets-row" id="presetsBlock">
         <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')">★ Полный алфавит</span>
         <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')">Базовые буквы</span>
-        <span class="preset-badge" onclick="setPreset('0 Ø 1 2 3 4 5 6 7 8 9')">Цифровой блок</span>
-        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 Ø 1 2 3 4 5 6 7 8 9')">Буквы и цифры</span>
+        <span class="preset-badge" onclick="setPreset('Ø 1 2 3 4 5 6 7 8 9')">Цифровой блок</span>
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 1 2 3 4 5 6 7 8 9')">Буквы и цифры</span>
         <span class="preset-badge" onclick="setPreset('= / ? , .')">Спецзнаки и препинание</span>
         <span class="preset-badge clear-btn" onclick="clearAllTrainer()">✖ Сброс бланка</span>
       </div>
@@ -315,17 +327,29 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
     <div class="grid-2">
       <div class="panel">
         <h3>Скоростные нормативы</h3>
+        <div class="speed-toggles">
+          <div class="unit-toggle" id="unitToggle" onclick="toggleSpeedUnit()" title="Переключение единиц измерения скорости: знаки в минуту / длительность точки в мс">
+            <div class="unit-toggle-thumb" id="unitToggleThumb"></div>
+            <span class="unit-toggle-opt on" id="unitToggleOptWpm">ЗН/МИН</span>
+            <span class="unit-toggle-opt" id="unitToggleOptMs">ТОЧКА (МС)</span>
+          </div>
+          <button class="toggle-input-btn" id="toggleInputTypeBtn" type="button" onclick="toggleSpeedInputType()" title="Переключить между числовым вводом (стрелочки) и ползунками (range)">ПОЛЗУНКИ</button>
+        </div>
         <div class="slider-group">
           <div class="slider-label"><span>Скорость посылки:</span><b id="lblCharSpeed">70 зн/мин</b></div>
-          <input type="range" id="rngCharSpeed" min="30" max="200" value="70"/>
+          <input type="number" class="num-field" id="rngCharSpeed" min="30" max="200" step="1" value="70" inputmode="numeric" autocomplete="off"/>
         </div>
         <div class="slider-group">
           <div class="slider-label"><span>Интервал (Фарнсворт):</span><b id="lblFarnSpeed">50 зн/мин</b></div>
-          <input type="range" id="rngFarnSpeed" min="20" max="70" value="50"/>
+          <input type="number" class="num-field" id="rngFarnSpeed" min="20" max="70" step="1" value="50" inputmode="numeric" autocomplete="off"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Пауза между группами:</span><b id="lblGroupPause">x1.0 (стандарт)</b></div>
+          <input type="number" class="num-field" id="rngGroupPause" min="10" max="50" step="1" value="10" inputmode="numeric" autocomplete="off"/>
         </div>
         <div class="slider-group" style="margin-bottom:0">
-          <div class="slider-label"><span>Пауза между группами:</span><b id="lblGroupPause">x1.0 (стандарт)</b></div>
-          <input type="range" id="rngGroupPause" min="10" max="50" value="10"/>
+          <div class="slider-label"><span>Общая скорость передачи:</span><b id="lblOverallSpeed" style="color:var(--mil-amber)">—</b></div>
+          <div style="font-size:9px;color:var(--mil-dim);margin-top:3px"></div>
         </div>
       </div>
       <div class="panel" style="display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-pack:justify;justify-content:space-between">
@@ -1352,10 +1376,14 @@ function sleepRx(ms) {
   });
 }
 
+// Источник истины - НОРМИЗОВАННОЕ состояние (зн/мин + коэффициенты пауз), которое
+// объявлено в app.js. Поля ввода блока «Скоростные нормативы» являются только
+// представлением этого состояния в выбранных единицах (зн/мин либо длительность
+// точки в мс), поэтому переключение тумблера единиц не влияет на звук.
 function getLiveAtomTimings() {
-  var charSpd = parseInt(document.getElementById("rngCharSpeed").value, 10) || 70;
-  var farnSpd = Math.min(charSpd, parseInt(document.getElementById("rngFarnSpeed").value, 10) || 50);
-  var grpMult = (parseFloat(document.getElementById("rngGroupPause").value) || 10) / 10.0;
+  var charSpd = speedCharWpm;
+  var farnSpd = Math.min(charSpd, speedFarnWpm);
+  var grpMult = speedGrpMult;
   var dotMs = 6000.0 / charSpd;
   var farnDotMs = 6000.0 / farnSpd;
   return {
@@ -1365,6 +1393,58 @@ function getLiveAtomTimings() {
     charPauseMs: Math.max(0, farnDotMs * 3 - dotMs),
     groupPauseMs: Math.max(0, (farnDotMs * 7 * grpMult) - dotMs)
   };
+}
+
+// ОБЩАЯ СКОРОСТЬ ПЕРЕДАЧИ по реальному тексту радиограммы (зн/мин).
+// Полная длительность считается той же моделью, что и rxNextAction(), поэтому
+// цифра совпадает с фактическим временем передачи: тон каждого элемента +
+// межэлементная пауза ПОСЛЕ КАЖДОГО элемента (включая последний) + межзнаковая
+// пауза после каждого экземпляра знака (в т.ч. между повторами знака) +
+// межгрупповая пауза после каждой группы, кроме последней (пауза после
+// последней группы - это уже пауза перед окончанием). Зачин/окончание и
+// технологические паузы в расчёт не входят: это служебные сигналы, а не текст.
+function measureRadiogramSpeed() {
+  var groups = getGroupsFromTable();
+  if (!groups.length) return null;
+  var t = getLiveAtomTimings();
+  var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
+  var charRepeats = parseInt(document.getElementById("charRepeat").value, 10) || 1;
+  var totalMs = 0, signs = 0;
+  for (var g = 0; g < groups.length; g++) {
+    var grp = groups[g];
+    for (var rep = 0; rep < repeats; rep++) {
+      for (var c = 0; c < grp.length; c++) {
+        var code = MORSE_MAP[grp[c]];
+        if (!code) {                       // неизвестный знак - одна межзнаковая пауза
+          totalMs += t.charPauseMs;
+          signs++;
+          continue;
+        }
+        var oneSign = t.charPauseMs;
+        for (var i = 0; i < code.length; i++) {
+          oneSign += (code[i] === "." ? t.dotMs : t.dashMs) + t.elemPauseMs;
+        }
+        totalMs += oneSign * charRepeats;
+        signs += charRepeats;
+      }
+      var isLastPass = (g === groups.length - 1 && rep === repeats - 1);
+      if (!isLastPass) totalMs += t.groupPauseMs;
+    }
+  }
+  if (totalMs <= 0) return null;
+  return { wpm: Math.round(signs * 60000 / totalMs), durationMs: totalMs, signs: signs };
+}
+
+function updateOverallSpeed() {
+  var el = document.getElementById("lblOverallSpeed");
+  if (!el) return;
+  var m = measureRadiogramSpeed();
+  if (!m) { setUiText("lblOverallSpeed", "—"); return; }
+  var mm = Math.floor(m.durationMs / 60000);
+  var ss = Math.round((m.durationMs - mm * 60000) / 1000);
+  setUiText("lblOverallSpeed", m.wpm + " зн/мин · " + mm + ":" + (ss < 10 ? "0" : "") + ss);
+  if (el.title) el.title = "Знаков с повторами: " + m.signs +
+    "; полная длительность передачи: " + (m.durationMs / 1000).toFixed(1) + " с";
 }
 
 function getStudyAtomTimings() {
@@ -1456,6 +1536,7 @@ function rxNextAction() {
     // переход к окончанию: счётчики служебных кодов стартуют заново
     st.stage = RX_STAGE_POST;
     st.ci = 0; st.si = 0; st.el = false;
+    rxRefreshStatus();
     return rxNextAction();
   }
 
@@ -1468,7 +1549,7 @@ function rxNextAction() {
       var slots = cell.querySelectorAll(".char-slot");
       for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
     }
-    setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
+    rxRefreshStatus();
   }
 
   if (st.c >= grp.length) {
@@ -1491,7 +1572,7 @@ function rxNextAction() {
     var c0 = st.c + 1;
     return {
       tone: false, dur: t.charPauseMs,
-      commit: function () { st.c = c0; st.k = 0; st.s = 0; st.el = false; }
+      commit: function () { st.c = c0; st.k = 0; st.s = 0; st.el = false; rxRefreshStatus(); }
     };
   }
 
@@ -1505,6 +1586,7 @@ function rxNextAction() {
     releaseCharHighlight(st.g, st.c);
     var c1 = st.c + 1;
     st.c = c1; st.k = 0; st.s = 0; st.el = false;
+    rxRefreshStatus();
     return rxNextAction();
   }
 
@@ -1560,6 +1642,14 @@ function rxPositionText(paused) {
   var idx = rxRun.g * rxRun.repeats + rxRun.r + 1;
   var total = rxRun.groups.length * rxRun.repeats;
   return (paused ? "ГРУППЫ " : "ГРУППА ") + idx + "/" + total + " · ЗНАК " + (rxRun.c + 1);
+}
+
+// Перерисовать строку статуса на текущем месте передачи. Вызывается при каждой
+// смене знака и группы: раньше статус обновлялся только при входе в группу, и
+// счётчик знаков висел на первом знаке группы до её конца.
+function rxRefreshStatus() {
+  if (rxState !== RX_PLAYING) return;
+  setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
 }
 
 function setRxTransportUI(state) {
@@ -1769,6 +1859,7 @@ function attachGroupInputEvents(inp, gIdx) {
   inp.oninput = function () {
     this.value = cleanMorseChars(this.value);
     validateInputs();
+    updateOverallSpeed();
   };
 
   inp.onkeydown = function (e) {
@@ -1854,6 +1945,7 @@ function renderGroupsFromList(groupsList) {
   addBtn.onclick = addNewEmptyGroup;
   addBtn.innerHTML = '<span class="add-icon">+</span><span class="add-text">НОВАЯ</span>';
   container.appendChild(addBtn);
+  updateOverallSpeed();
 }
 
 function addNewEmptyGroup() {
@@ -2942,32 +3034,201 @@ var rngFarn = document.getElementById("rngFarnSpeed");
 var rngGrpPause = document.getElementById("rngGroupPause");
 var rngStudy = document.getElementById("rngStudySpeed");
 
-function updateSpeedControls() {
-  var charVal = parseInt(rngChar.value, 10);
-  rngFarn.max = charVal;
-  if (parseInt(rngFarn.value, 10) > charVal) {
-    rngFarn.value = charVal;
-    setUiText("lblFarnSpeed", charVal + " зн/мин");
+// РЕЖИМ ОТОБРАЖЕНИЯ СКОРОСТИ: 'WPM' - знаки в минуту, 'MS' - длительность точки в мс.
+// speedCharWpm / speedFarnWpm / speedGrpMult - НОРМИЗОВАННОЕ состояние движка, всегда
+// в зн/мин и в коэффициентах пауз. Поля ввода - лишь представление этого состояния
+// в выбранных единицах, поэтому переключение тумблера не влияет на звук.
+var speedUnitMode = 'WPM';
+var speedCharWpm = 70, speedFarnWpm = 50, speedGrpMult = 1.0;
+var CHAR_WPM_MIN = 30, CHAR_WPM_MAX = 200;
+var FARN_WPM_MIN = 20;
+var GRP_MULT_MIN = 1.0, GRP_MULT_MAX = 5.0;
+// Поле ввода, которое в данный момент редактируется: его value не перезаписывается
+// при перерисовке, иначе стрелки числового поля «прыгают» через шаг.
+var speedEditingEl = null;
+
+// Стандарт PARIS в конвенции прибора: длительность точки T = 6000 / W (мс).
+// Обратная формула: W = 6000 / T. Это ЕДИНСТВЕННЫЙ источник пересчёта единиц.
+function wpmToDotMs(wpm) { return 6000.0 / wpm; }
+function dotMsToWpm(ms) { return 6000.0 / ms; }
+function clampNum(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+// Межгрупповая пауза в мс по той же модели, что и getLiveAtomTimings().
+function groupPauseMsByMult(mult) {
+  return Math.max(0, wpmToDotMs(speedFarnWpm) * 7 * mult - wpmToDotMs(speedCharWpm));
+}
+
+// Приведение нормализованного состояния к допустимым пределам + защита связки
+// Фарнсворта. ОКРУГЛЕНИЯ ЗДЕСЬ НАМЕРЕННО НЕТ: состояние хранит точное
+// значение, иначе переключение «зн/мин <-> мс» перестаёт быть чистой
+// конвертацией (70.588 зн/мин превратился бы в 71, а обратно - в 85 мс
+// вместо исходных 85.71). Округление живёт только в отображении.
+function normalizeSpeedState() {
+  if (!(speedCharWpm > 0)) speedCharWpm = 70;
+  speedCharWpm = clampNum(speedCharWpm, CHAR_WPM_MIN, CHAR_WPM_MAX);
+  if (!(speedFarnWpm > 0)) speedFarnWpm = FARN_WPM_MIN;
+  if (speedFarnWpm > speedCharWpm) speedFarnWpm = speedCharWpm;
+  speedFarnWpm = clampNum(speedFarnWpm, FARN_WPM_MIN, speedCharWpm);
+  if (!(speedGrpMult > 0)) speedGrpMult = GRP_MULT_MIN;
+  speedGrpMult = clampNum(speedGrpMult, GRP_MULT_MIN, GRP_MULT_MAX);
+}
+
+// Пересчёт состояния -> поля ввода (min/max/step/value) и текстовые метки.
+function renderSpeedControls() {
+  normalizeSpeedState();
+  var msMode = speedUnitMode === 'MS';
+  var dotMs = wpmToDotMs(speedCharWpm);
+  var farnDotMs = wpmToDotMs(speedFarnWpm);
+
+  rngChar.min = msMode ? Math.round(wpmToDotMs(CHAR_WPM_MAX)) : CHAR_WPM_MIN;
+  rngChar.max = msMode ? Math.round(wpmToDotMs(CHAR_WPM_MIN)) : CHAR_WPM_MAX;
+
+  if (msMode) {
+    // Режим ТОЧКА - инверсия шкалы: меньше миллисекунд, выше скорость.
+    // Поле, которое сейчас редактируется, не перезаписываем: иначе браузерные
+    // стрелки «прыгают» (поле уводит значение мимо того числа, что ввёл user).
+    if (rngChar !== speedEditingEl) rngChar.value = Math.round(dotMs);
+    rngFarn.min = Math.round(dotMs);            // Фарнсворт не быстрее посылки
+    rngFarn.max = Math.round(wpmToDotMs(FARN_WPM_MIN));
+    if (rngFarn !== speedEditingEl) rngFarn.value = Math.round(farnDotMs);
+    rngGrpPause.min = Math.round(groupPauseMsByMult(GRP_MULT_MIN));  // пауза короче x1.0 невозможна
+    rngGrpPause.max = Math.round(groupPauseMsByMult(GRP_MULT_MAX));
+    if (rngGrpPause !== speedEditingEl) {
+      rngGrpPause.value = clampNum(Math.round(groupPauseMsByMult(speedGrpMult)), rngGrpPause.min, rngGrpPause.max);
+    }
+    setUiText("lblCharSpeed", Math.round(dotMs) + " мс");
+    setUiText("lblFarnSpeed", Math.round(farnDotMs) + " мс");
+    setUiText("lblGroupPause", Math.round(groupPauseMsByMult(speedGrpMult)) + " мс");
+  } else {
+    // Поля показывают округлённое представление, состояние остаётся точным.
+    rngChar.value = Math.round(speedCharWpm);
+    rngFarn.min = FARN_WPM_MIN;
+    rngFarn.max = Math.round(speedCharWpm);
+    rngFarn.value = Math.round(speedFarnWpm);
+    rngGrpPause.min = GRP_MULT_MIN * 10;
+    rngGrpPause.max = GRP_MULT_MAX * 10;
+    rngGrpPause.value = Math.round(speedGrpMult * 10);
+    var mTxt = speedGrpMult.toFixed(1);
+    setUiText("lblCharSpeed", Math.round(speedCharWpm) + " зн/мин");
+    setUiText("lblFarnSpeed", Math.round(speedFarnWpm) + " зн/мин");
+    setUiText("lblGroupPause", "x" + mTxt + (mTxt === "1.0" ? " (стандарт)" : ""));
   }
-  setUiText("lblCharSpeed", charVal + " зн/мин");
+  updateOverallSpeed();
   throttleApply();
 }
 
-rngChar.oninput = updateSpeedControls;
-rngChar.onchange = updateSpeedControls;
+// Разбор значения поля ввода -> нормализованное состояние (без перерисовки).
+// Возвращает false, если в поле пусто или значение не число.
+// Конвертация ЕДИНСТВЕННАЯ И ТОЧНАЯ: мс -> зн/мин по формуле W = 6000 / T,
+// без округления, поэтому переключение единиц ничего не меняет по существу.
+function readSpeedInput(el, kind) {
+  var v = parseFloat(el.value);
+  if (isNaN(v) || el.value === "") return false;
+  if (speedUnitMode === 'MS') {
+    if (kind === 'char') speedCharWpm = dotMsToWpm(v);
+    else if (kind === 'farn') speedFarnWpm = dotMsToWpm(v);
+    else speedGrpMult = (v + wpmToDotMs(speedCharWpm)) / (7 * wpmToDotMs(speedFarnWpm));
+  } else {
+    if (kind === 'char') speedCharWpm = v;
+    else if (kind === 'farn') speedFarnWpm = v;
+    else speedGrpMult = v / 10;
+  }
+  return true;
+}
 
-rngFarn.oninput = function () {
-  setUiText("lblFarnSpeed", rngFarn.value + " зн/мин");
-  throttleApply();
-};
+function applySpeedInput(el, kind) {
+  speedEditingEl = el;
+  readSpeedInput(el, kind);
+  renderSpeedControls();
+  speedEditingEl = null;
+}
+
+function toggleSpeedUnit() {
+  speedUnitMode = speedUnitMode === 'WPM' ? 'MS' : 'WPM';
+  var tg = document.getElementById("unitToggle");
+  var oW = document.getElementById("unitToggleOptWpm");
+  var oM = document.getElementById("unitToggleOptMs");
+  if (tg) {
+    if (speedUnitMode === 'MS') tg.className = tg.className.replace(/\s*ms\b/, "") + " ms";
+    else tg.className = tg.className.replace(/\s*ms\b/, "");
+  }
+  if (oW) oW.className = "unit-toggle-opt" + (speedUnitMode === 'WPM' ? " on" : "");
+  if (oM) oM.className = "unit-toggle-opt" + (speedUnitMode === 'MS' ? " on" : "");
+  // Смена единиц - чистая конвертация: сбрасываем «редактируемое» поле, чтобы
+  // значения в полях пересчитались из того же самого состояния.
+  speedEditingEl = null;
+  renderSpeedControls();
+}
+
+// ПЕРЕКЛЮЧЕНИЕ «ЧИСЛОВОЙ ВВОД / ПОЛЗУНКИ» в блоке «Скоростные нормативы».
+// Набор полей один и тот же - меняется только тип элемента (number <-> range),
+// поэтому обработчики, границы и подписи остаются теми же. Состояние движка
+// при переключении не меняется: перед сменой типа незакоммиченное значение поля
+// переносится в нормализованное состояние.
+var SPEED_FIELDS = [
+  { id: "rngCharSpeed", kind: "char" },
+  { id: "rngFarnSpeed", kind: "farn" },
+  { id: "rngGroupPause", kind: "grp" }
+];
+var speedInputIsRange = false;
+
+function applySpeedInputType() {
+  for (var i = 0; i < SPEED_FIELDS.length; i++) {
+    var el = document.getElementById(SPEED_FIELDS[i].id);
+    if (!el) continue;
+    if (speedInputIsRange) {
+      el.type = "range";
+      el.className = el.className.replace(/\s*\bnum-field\b/g, "");
+      el.removeAttribute("inputmode");
+    } else {
+      el.type = "number";
+      if (!/\bnum-field\b/.test(el.className)) el.className = (el.className + " num-field").replace(/^\s+/, "");
+      el.setAttribute("inputmode", "numeric");
+    }
+  }
+  var btn = document.getElementById("toggleInputTypeBtn");
+  if (btn) {
+    btn.className = "toggle-input-btn" + (speedInputIsRange ? " active" : "");
+    btn.textContent = speedInputIsRange ? "СТРЕЛОЧКИ" : "ПОЛЗУНКИ";
+    btn.title = speedInputIsRange
+      ? "Вернуть числовой ввод (стрелочки)"
+      : "Переключить между числовым вводом (стрелочки) и ползунками (range)";
+  }
+  renderSpeedControls();
+}
+
+function toggleSpeedInputType() {
+  // Значение, введённое в числовое поле, фиксируем до смены типа элемента:
+  // смена type может сбросить несохранённый текст поля.
+  if (!speedInputIsRange) {
+    for (var i = 0; i < SPEED_FIELDS.length; i++) {
+      var el = document.getElementById(SPEED_FIELDS[i].id);
+      if (el) readSpeedInput(el, SPEED_FIELDS[i].kind);
+    }
+  }
+  speedInputIsRange = !speedInputIsRange;
+  speedEditingEl = null;   // тип элемента сменился - значения надо пересчитать
+  applySpeedInputType();
+}
+
+rngChar.oninput = function () { applySpeedInput(this, 'char'); };
+rngChar.onchange = rngChar.oninput;
+
+rngFarn.oninput = function () { applySpeedInput(this, 'farn'); };
 rngFarn.onchange = rngFarn.oninput;
 
-rngGrpPause.oninput = function () {
-  var mult = (parseFloat(this.value) / 10).toFixed(1);
-  var suffix = mult === "1.0" ? " (стандарт)" : "";
-  setUiText("lblGroupPause", "x" + mult + suffix);
-};
+rngGrpPause.oninput = function () { applySpeedInput(this, 'grp'); };
 rngGrpPause.onchange = rngGrpPause.oninput;
+
+// Повторы групп и знаков тоже меняют общую скорость (повтор знака - акустический,
+// он занимает время передачи, поэтому входит в расчёт).
+["groupRepeat", "charRepeat"].forEach(function (id) {
+  var sel = document.getElementById(id);
+  if (!sel) return;
+  var h = function () { updateOverallSpeed(); };
+  sel.onchange = h;
+  sel.oninput = h;
+});
 
 if (rngStudy) {
   rngStudy.oninput = function() {
@@ -3079,6 +3340,8 @@ uiGenerateGroupsTable();
 initGroupsDragAndDrop();
 refreshAllAutoGrows();
 initRampDropdown();
+applySpeedInputType();     // согласует тип полей ввода с подписью на кнопке
+renderSpeedControls();   // нормализует стартовые значения и заполняет поля ввода
 requestAnimationFrame(renderUndulator);
 
 </script>

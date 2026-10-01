@@ -110,10 +110,14 @@ function sleepRx(ms) {
   });
 }
 
+// Источник истины - НОРМИЗОВАННОЕ состояние (зн/мин + коэффициенты пауз), которое
+// объявлено в app.js. Поля ввода блока «Скоростные нормативы» являются только
+// представлением этого состояния в выбранных единицах (зн/мин либо длительность
+// точки в мс), поэтому переключение тумблера единиц не влияет на звук.
 function getLiveAtomTimings() {
-  var charSpd = parseInt(document.getElementById("rngCharSpeed").value, 10) || 70;
-  var farnSpd = Math.min(charSpd, parseInt(document.getElementById("rngFarnSpeed").value, 10) || 50);
-  var grpMult = (parseFloat(document.getElementById("rngGroupPause").value) || 10) / 10.0;
+  var charSpd = speedCharWpm;
+  var farnSpd = Math.min(charSpd, speedFarnWpm);
+  var grpMult = speedGrpMult;
   var dotMs = 6000.0 / charSpd;
   var farnDotMs = 6000.0 / farnSpd;
   return {
@@ -123,6 +127,58 @@ function getLiveAtomTimings() {
     charPauseMs: Math.max(0, farnDotMs * 3 - dotMs),
     groupPauseMs: Math.max(0, (farnDotMs * 7 * grpMult) - dotMs)
   };
+}
+
+// ОБЩАЯ СКОРОСТЬ ПЕРЕДАЧИ по реальному тексту радиограммы (зн/мин).
+// Полная длительность считается той же моделью, что и rxNextAction(), поэтому
+// цифра совпадает с фактическим временем передачи: тон каждого элемента +
+// межэлементная пауза ПОСЛЕ КАЖДОГО элемента (включая последний) + межзнаковая
+// пауза после каждого экземпляра знака (в т.ч. между повторами знака) +
+// межгрупповая пауза после каждой группы, кроме последней (пауза после
+// последней группы - это уже пауза перед окончанием). Зачин/окончание и
+// технологические паузы в расчёт не входят: это служебные сигналы, а не текст.
+function measureRadiogramSpeed() {
+  var groups = getGroupsFromTable();
+  if (!groups.length) return null;
+  var t = getLiveAtomTimings();
+  var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
+  var charRepeats = parseInt(document.getElementById("charRepeat").value, 10) || 1;
+  var totalMs = 0, signs = 0;
+  for (var g = 0; g < groups.length; g++) {
+    var grp = groups[g];
+    for (var rep = 0; rep < repeats; rep++) {
+      for (var c = 0; c < grp.length; c++) {
+        var code = MORSE_MAP[grp[c]];
+        if (!code) {                       // неизвестный знак - одна межзнаковая пауза
+          totalMs += t.charPauseMs;
+          signs++;
+          continue;
+        }
+        var oneSign = t.charPauseMs;
+        for (var i = 0; i < code.length; i++) {
+          oneSign += (code[i] === "." ? t.dotMs : t.dashMs) + t.elemPauseMs;
+        }
+        totalMs += oneSign * charRepeats;
+        signs += charRepeats;
+      }
+      var isLastPass = (g === groups.length - 1 && rep === repeats - 1);
+      if (!isLastPass) totalMs += t.groupPauseMs;
+    }
+  }
+  if (totalMs <= 0) return null;
+  return { wpm: Math.round(signs * 60000 / totalMs), durationMs: totalMs, signs: signs };
+}
+
+function updateOverallSpeed() {
+  var el = document.getElementById("lblOverallSpeed");
+  if (!el) return;
+  var m = measureRadiogramSpeed();
+  if (!m) { setUiText("lblOverallSpeed", "—"); return; }
+  var mm = Math.floor(m.durationMs / 60000);
+  var ss = Math.round((m.durationMs - mm * 60000) / 1000);
+  setUiText("lblOverallSpeed", m.wpm + " зн/мин · " + mm + ":" + (ss < 10 ? "0" : "") + ss);
+  if (el.title) el.title = "Знаков с повторами: " + m.signs +
+    "; полная длительность передачи: " + (m.durationMs / 1000).toFixed(1) + " с";
 }
 
 function getStudyAtomTimings() {
@@ -214,6 +270,7 @@ function rxNextAction() {
     // переход к окончанию: счётчики служебных кодов стартуют заново
     st.stage = RX_STAGE_POST;
     st.ci = 0; st.si = 0; st.el = false;
+    rxRefreshStatus();
     return rxNextAction();
   }
 
@@ -226,7 +283,7 @@ function rxNextAction() {
       var slots = cell.querySelectorAll(".char-slot");
       for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
     }
-    setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
+    rxRefreshStatus();
   }
 
   if (st.c >= grp.length) {
@@ -249,7 +306,7 @@ function rxNextAction() {
     var c0 = st.c + 1;
     return {
       tone: false, dur: t.charPauseMs,
-      commit: function () { st.c = c0; st.k = 0; st.s = 0; st.el = false; }
+      commit: function () { st.c = c0; st.k = 0; st.s = 0; st.el = false; rxRefreshStatus(); }
     };
   }
 
@@ -263,6 +320,7 @@ function rxNextAction() {
     releaseCharHighlight(st.g, st.c);
     var c1 = st.c + 1;
     st.c = c1; st.k = 0; st.s = 0; st.el = false;
+    rxRefreshStatus();
     return rxNextAction();
   }
 
@@ -318,6 +376,14 @@ function rxPositionText(paused) {
   var idx = rxRun.g * rxRun.repeats + rxRun.r + 1;
   var total = rxRun.groups.length * rxRun.repeats;
   return (paused ? "ГРУППЫ " : "ГРУППА ") + idx + "/" + total + " · ЗНАК " + (rxRun.c + 1);
+}
+
+// Перерисовать строку статуса на текущем месте передачи. Вызывается при каждой
+// смене знака и группы: раньше статус обновлялся только при входе в группу, и
+// счётчик знаков висел на первом знаке группы до её конца.
+function rxRefreshStatus() {
+  if (rxState !== RX_PLAYING) return;
+  setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
 }
 
 function setRxTransportUI(state) {
@@ -527,6 +593,7 @@ function attachGroupInputEvents(inp, gIdx) {
   inp.oninput = function () {
     this.value = cleanMorseChars(this.value);
     validateInputs();
+    updateOverallSpeed();
   };
 
   inp.onkeydown = function (e) {
@@ -612,6 +679,7 @@ function renderGroupsFromList(groupsList) {
   addBtn.onclick = addNewEmptyGroup;
   addBtn.innerHTML = '<span class="add-icon">+</span><span class="add-text">НОВАЯ</span>';
   container.appendChild(addBtn);
+  updateOverallSpeed();
 }
 
 function addNewEmptyGroup() {
