@@ -414,6 +414,7 @@ resizeCanvas();
 renderStudyTable();
 uiGenerateGroupsTable();
 initGroupsDragAndDrop();
+initTextImport();
 refreshAllAutoGrows();
 initRampDropdown();
 applySpeedInputType();     // согласует тип полей ввода с подписью на кнопке

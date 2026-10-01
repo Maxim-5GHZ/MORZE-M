@@ -41,12 +41,15 @@ function setTrainerLocked(isLocked) {
   document.getElementById("numGroups").disabled = isLocked;
   document.getElementById("groupRepeat").disabled = isLocked;
   document.getElementById("charRepeat").disabled = isLocked;
+  document.getElementById("chkMonoOnly").disabled = isLocked;
   document.getElementById("selPreambleMode").disabled = isLocked;
   document.getElementById("selPostambleMode").disabled = isLocked;
   document.getElementById("btnGenGroups").disabled = isLocked;
   document.getElementById("monoCharInput").disabled = isLocked;
   document.getElementById("monoCharCount").disabled = isLocked;
   document.getElementById("btnInsertMono").disabled = isLocked;
+  var impBtn = document.getElementById("btnOpenImport");
+  if (impBtn) impBtn.disabled = isLocked;
 
   var badges = document.querySelectorAll(".preset-badge");
   for (var b = 0; b < badges.length; b++) {
@@ -513,7 +516,12 @@ function validateInputs() {
     if (uniqueChars.indexOf(rawChars[i]) === -1) uniqueChars.push(rawChars[i]);
   }
 
-  if (uniqueChars.length === 0) {
+  // Импортированному бланку набор знаков не нужен: движок приёма читает только
+  // ячейки, поэтому пустой набор и его рассогласование с приоритетными знаками
+  // ПУСК не блокируют. Для обычных бланков - строго как раньше.
+  var skipCharsetChecks = blankIsImported && uniqueChars.length === 0;
+
+  if (uniqueChars.length === 0 && !skipCharsetChecks) {
     errBox.style.display = "block";
     errBox.innerHTML = "ВНИМАНИЕ: Набор знаков пуст. Выберите профиль или введите символы.";
     startBtn.disabled = true;
@@ -531,7 +539,7 @@ function validateInputs() {
     if (uniqueChars.indexOf(uniqueAcc[k]) === -1) invalidAccChars.push(uniqueAcc[k]);
   }
 
-  if (invalidAccChars.length > 0) {
+  if (invalidAccChars.length > 0 && !skipCharsetChecks) {
     accInput.style.borderColor = "var(--mil-red)";
     errBox.style.display = "block";
     errBox.innerHTML = "НЕСООТВЕТСТВИЕ: Знаков [ <b>" + invalidAccChars.join(", ") + "</b> ] нет в основном наборе.";
@@ -548,11 +556,14 @@ function validateInputs() {
     return false;
   }
 
+  // Импортированный бланк (слова, хвост без добивки) законно содержит группы
+  // короче «Размера группы» - для него проверяем только непустоту ячеек.
   var emptyGroupFound = false, brokenIndex = -1;
   for (var g = 0; g < groupInputs.length; g++) {
     var cell = findAncestor(groupInputs[g], "group-cell");
     var val = cleanMorseChars(groupInputs[g].value);
-    if (val.length < targetLen) {
+    var badCell = blankIsImported ? (val.length === 0) : (val.length < targetLen);
+    if (badCell) {
       emptyGroupFound = true;
       if (brokenIndex === -1) brokenIndex = g + 1;
       if (cell) cell.className += " cell-error";
@@ -563,7 +574,9 @@ function validateInputs() {
 
   if (emptyGroupFound) {
     errBox.style.display = "block";
-    errBox.innerHTML = "НАРУШЕНИЕ СТРУКТУРЫ: Группа №" + brokenIndex + " содержит менее " + targetLen + " знаков.";
+    errBox.innerHTML = blankIsImported
+      ? "НАРУШЕНИЕ СТРУКТУРЫ: Группа №" + brokenIndex + " пуста."
+      : "НАРУШЕНИЕ СТРУКТУРЫ: Группа №" + brokenIndex + " содержит менее " + targetLen + " знаков.";
     startBtn.disabled = true;
     return false;
   }
@@ -573,6 +586,11 @@ function validateInputs() {
   return true;
 }
 
+// Признак импортированного бланка (загрузка текста через пульт импорта).
+// Для такого бланка валидация мягкая: группы проверяются только на непустоту,
+// набор знаков не требуется (движку приёма он не нужен - читаются только
+// ячейки). Сбрасывается при перегенерации/очистке, ручной ввод его не трогает.
+var blankIsImported = false;
 var groupsHidden = false;
 function toggleHideGroups() {
   groupsHidden = !groupsHidden;
@@ -730,8 +748,386 @@ function insertMonoGroupFromPanel() {
   container.scrollTop = container.scrollHeight;
 }
 
+/* ==========================================================================
+   МОДУЛЬ ЗАГРУЗКИ ТЕКСТА В БЛАНК (ПКМ ПО БЛАНКУ / КНОПКА «ЗАГРУЗИТЬ»)
+   - контекстное меню бланка: загрузка из буфера, копирование, очистка;
+   - модальный пульт импорта: чтение буфера (navigator.clipboard с откатом
+     на ручную вставку Ctrl+V для старых Gecko), морзе-транслит латиницы,
+     нарезка на группы, превью, синхронизация набора знаков.
+   Совместимость: только ES5 (Gecko 43), без Promise/async в основном пути.
+   ========================================================================== */
+
+// Морзе-транслит латиницы в кириллицу ПО КОДУ: латинская буква заменяется той
+// русской буквой, чей код Морзе совпадает (CQ -> ЦЩ, QSO -> ЩСО, V -> Ж).
+// X (-..-) в базе первым записан как Ъ - держим то же соответствие, что и
+// обратный словарь REVERSE_MORSE. Цифры и знаки = / ? , . общие, не трогаем.
+var IMPORT_LAT2CYR = {
+  A: "А", B: "Б", C: "Ц", D: "Д", E: "Е", F: "Ф", G: "Г", H: "Х",
+  I: "И", J: "Й", K: "К", L: "Л", M: "М", N: "Н", O: "О", P: "П",
+  Q: "Щ", R: "Р", S: "С", T: "Т", U: "У", V: "Ж", W: "В", X: "Ъ",
+  Y: "Ы", Z: "З"
+};
+
+var IMPORT_MAX_GROUPS = 100;
+
+// Нормализация сырого текста: верхний регистр, Ё -> Е, короткий ноль 0-/-0
+// -> Ø (та же конвенция, что и ручной ввод), морзе-транслит, чистка мусора.
+function importTranslitLatin(s) {
+  var out = "";
+  for (var i = 0; i < s.length; i++) {
+    var ch = s.charAt(i);
+    out += IMPORT_LAT2CYR[ch] || ch;
+  }
+  return out;
+}
+
+// Сплошной поток знаков без пробелов (режим «строго по N»).
+function importNormalizeStream(raw) {
+  if (!raw) return "";
+  var s = ("" + raw).toUpperCase().replace(/Ё/g, "Е");
+  s = s.replace(/0-|-0/g, "Ø");
+  s = importTranslitLatin(s);
+  return cleanMorseChars(s);
+}
+
+// Слова для режима «по словам»: пробелы/переносы - разделители групп.
+function importSplitWords(raw) {
+  if (!raw) return [];
+  var s = ("" + raw).toUpperCase().replace(/Ё/g, "Е");
+  s = s.replace(/0-|-0/g, "Ø");
+  s = importTranslitLatin(s);
+  s = s.replace(/[^A-ZА-Я0-9Ø=\/?,\.\s]/gi, " ");
+  var parts = s.split(/\s+/);
+  var words = [];
+  for (var i = 0; i < parts.length; i++) {
+    var w = cleanMorseChars(parts[i]);
+    if (w) words.push(w);
+  }
+  return words;
+}
+
+function importGetGroupLen() {
+  var el = document.getElementById("importGroupLen");
+  var n = el ? (parseInt(el.value, 10) || 5) : 5;
+  if (n < 2) n = 2;
+  if (n > 5) n = 5;
+  return n;
+}
+
+function importPadGroup(g, n) {
+  while (g.length < n) g += "=";
+  return g;
+}
+
+// Нарезка групп по текущим настройкам пульта. Возвращает
+// { groups: [...], truncated: bool, totalChars: N }.
+function importSliceGroups() {
+  var res = { groups: [], truncated: false, totalChars: 0 };
+  var ta = document.getElementById("importText");
+  var raw = ta ? ta.value : "";
+  var n = importGetGroupLen();
+  var strict = true;
+  var modeW = document.getElementById("importModeWords");
+  if (modeW && modeW.checked) strict = false;
+  var padEl = document.getElementById("importPadEq");
+  var pad = !padEl || padEl.checked;
+
+  if (strict) {
+    var stream = importNormalizeStream(raw);
+    res.totalChars = stream.length;
+    for (var i = 0; i < stream.length; i += n) {
+      var chunk = stream.substr(i, n);
+      if (chunk.length < n && pad) chunk = importPadGroup(chunk, n);
+      res.groups.push(chunk);
+    }
+  } else {
+    var words = importSplitWords(raw);
+    var chars = 0;
+    for (var w = 0; w < words.length; w++) {
+      var word = words[w];
+      chars += word.length;
+      if (word.length <= n) {
+        res.groups.push(word.length < n && pad ? importPadGroup(word, n) : word);
+      } else {
+        // Слово длиннее группы: режем на куски по N (maxlength ячейки
+        // программно заданное значение не обрезает, но структура ломается).
+        for (var k = 0; k < word.length; k += n) {
+          var part = word.substr(k, n);
+          if (part.length < n && pad) part = importPadGroup(part, n);
+          res.groups.push(part);
+        }
+      }
+    }
+    res.totalChars = chars;
+  }
+
+  if (res.groups.length > IMPORT_MAX_GROUPS) {
+    res.groups = res.groups.slice(0, IMPORT_MAX_GROUPS);
+    res.truncated = true;
+  }
+  return res;
+}
+
+function importSetHint(text, cls) {
+  var hint = document.getElementById("importHint");
+  if (!hint) return;
+  if (text !== undefined && text !== null) hint.textContent = text;
+  hint.className = "import-hint" + (cls ? " " + cls : "");
+}
+
+// Живое превью + счётчик. Вызывается из разметки (oninput/onchange).
+function refreshImportPreview() {
+  var counter = document.getElementById("importCounter");
+  var prev = document.getElementById("importPreview");
+  var applyBtn = document.getElementById("btnApplyImport");
+  if (!counter || !prev) return;
+  var r = importSliceGroups();
+  var t = "ЗНАКОВ: " + r.totalChars + " · ГРУПП: " + r.groups.length + " / " + IMPORT_MAX_GROUPS;
+  if (r.truncated) t += " · ЛИШНЕЕ ОТСЕЧЕНО";
+  // Заранее показываем, что часть групп короче «Размера группы» (слова без
+  // добивки, короткий хвост): после применения такие группы пройдут мягкую
+  // проверку импортированного бланка, но для uniform-тренировки лучше добивка.
+  var gl = document.getElementById("groupLength");
+  var needLen = gl ? (parseInt(gl.value, 10) || 5) : 5;
+  var shortCount = 0;
+  for (var si = 0; si < r.groups.length; si++) {
+    if (r.groups[si].length < needLen) shortCount++;
+  }
+  if (shortCount > 0) t += " · КОРОТКИХ ГРУПП: " + shortCount + " (меньше " + needLen + ")";
+  counter.textContent = t;
+  counter.className = "import-counter" + ((r.truncated || shortCount > 0) ? " over" : "");
+  if (!r.groups.length) {
+    prev.innerHTML = '<span class="import-empty">Нет пригодных знаков: вставьте текст или считайте буфер обмена.</span>';
+  } else {
+    prev.textContent = r.groups.join(" ");
+  }
+  if (applyBtn) applyBtn.disabled = !r.groups.length;
+}
+
+function openTextImport() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  hideGroupsCtxMenu();
+  var ov = document.getElementById("importOverlay");
+  if (!ov) return;
+  // N по умолчанию - из текущего «Размера группы», чтобы импорт сразу
+  // проходил проверку структуры бланка.
+  var gl = document.getElementById("groupLength");
+  var imp = document.getElementById("importGroupLen");
+  if (gl && imp) imp.value = gl.value;
+  ov.style.display = "block";
+  refreshImportPreview();
+  // Пробуем сразу подтянуть буфер; при отказе - фокус для ручной вставки.
+  if (!readClipboardIntoImport(true)) {
+    var ta = document.getElementById("importText");
+    if (ta) ta.focus();
+  }
+}
+
+function closeTextImport() {
+  var ov = document.getElementById("importOverlay");
+  if (ov) ov.style.display = "none";
+}
+
+// Чтение буфера обмена в поле пульта. Возвращает true, если попытка чтения
+// запущена (результат придёт асинхронно), иначе false - тогда вызывающий
+// код сам ставит фокус для ручной вставки Ctrl+V.
+function readClipboardIntoImport(silent) {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return false;
+  var ta = document.getElementById("importText");
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard &&
+        typeof navigator.clipboard.readText === "function" &&
+        typeof Promise !== "undefined") {
+      importSetHint("Чтение буфера обмена…");
+      navigator.clipboard.readText().then(function (text) {
+        if (ta) { ta.value = text || ""; refreshImportPreview(); ta.focus(); }
+        importSetHint(text ? "Буфер обмена считан, проверьте превью." : "Буфер обмена пуст: вставьте текст вручную через Ctrl+V.", text ? "ok" : "warn");
+      }, function () {
+        importSetHint("Доступ к буферу запрещён: вставьте текст вручную через Ctrl+V.", "warn");
+        if (ta) ta.focus();
+      });
+      return true;
+    }
+  } catch (e) {}
+  // Старого Gecko без Clipboard API: только ручная вставка.
+  if (!silent) {
+    importSetHint("Ваш браузер не отдаёт буфер скриптам: вставьте текст вручную через Ctrl+V.", "warn");
+    if (ta) ta.focus();
+  }
+  return false;
+}
+
+function applyTextImport() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  var r = importSliceGroups();
+  if (!r.groups.length) return;
+  var strict = true;
+  var modeW = document.getElementById("importModeWords");
+  if (modeW && modeW.checked) strict = false;
+  if (strict) {
+    // В строгом режиме N становится «Размером группы» - тогда импортированный
+    // бланк гарантированно проходит проверку структуры.
+    var gl = document.getElementById("groupLength");
+    if (gl) gl.value = String(importGetGroupLen());
+  }
+  // Синхронизация алфавита тренажёра: новые знаки - в «Набор знаков»,
+  // иначе генератор и валидатор будут ругаться на чужие символы.
+  var sync = document.getElementById("importSyncCharset");
+  if (!sync || sync.checked) {
+    var seen = {};
+    for (var i = 0; i < r.groups.length; i++) {
+      var g = r.groups[i];
+      for (var k = 0; k < g.length; k++) {
+        if (!seen[g.charAt(k)]) { seen[g.charAt(k)] = 1; ensureCharInCharset(g.charAt(k)); }
+      }
+    }
+  }
+  renderGroupsFromList(r.groups);
+  document.getElementById("numGroups").value = r.groups.length;
+  blankIsImported = true;
+  closeTextImport();
+  validateInputs();
+  var container = document.getElementById("groupsContainer");
+  if (container) container.scrollTop = 0;
+}
+
+/* ---------- Контекстное меню бланка (ПКМ) ---------- */
+
+function hideGroupsCtxMenu() {
+  var m = document.getElementById("groupsCtxMenu");
+  if (m) m.style.display = "none";
+}
+
+function showGroupsCtxMenu(x, y) {
+  var m = document.getElementById("groupsCtxMenu");
+  if (!m) return;
+  m.style.display = "block";
+  m.style.left = "0px";
+  m.style.top = "0px";
+  var w = m.offsetWidth || 240, h = m.offsetHeight || 120;
+  var vw = window.innerWidth || document.documentElement.clientWidth || 800;
+  var vh = window.innerHeight || document.documentElement.clientHeight || 600;
+  if (x + w > vw - 4) x = vw - w - 4;
+  if (y + h > vh - 4) y = vh - h - 4;
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  m.style.left = x + "px";
+  m.style.top = y + "px";
+}
+
+// Копирование бланка: современный Clipboard API, откат на execCommand('copy')
+// для старых Gecko (там копирование работает по жесту пользователя - клик по
+// пункту меню подходит).
+function legacyCopyText(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  ta.style.top = "0px";
+  document.body.appendChild(ta);
+  var done = false;
+  try {
+    ta.focus();
+    ta.select();
+    if (typeof ta.setSelectionRange === "function") ta.setSelectionRange(0, ta.value.length);
+    done = document.execCommand("copy");
+  } catch (e) { done = false; }
+  if (ta.parentNode) ta.parentNode.removeChild(ta);
+  return !!done;
+}
+
+function copyRadiogramToClipboard() {
+  hideGroupsCtxMenu();
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  var list = getGroupsFromTable();
+  var kept = [];
+  for (var i = 0; i < list.length; i++) if (list[i]) kept.push(list[i]);
+  if (!kept.length) { alert("БЛАНК ПУСТ: копировать нечего."); return; }
+  var text = kept.join(" ");
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard &&
+        typeof navigator.clipboard.writeText === "function" &&
+        typeof Promise !== "undefined") {
+      navigator.clipboard.writeText(text).then(function () {
+        alert("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
+      }, function () {
+        if (legacyCopyText(text)) alert("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
+        else alert("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
+      });
+      return;
+    }
+  } catch (e) {}
+  if (legacyCopyText(text)) alert("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
+  else alert("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
+}
+
+function clearBlankGroups() {
+  hideGroupsCtxMenu();
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  renderGroupsFromList([]);
+  document.getElementById("numGroups").value = 0;
+  blankIsImported = false;
+  validateInputs();
+}
+
+function initTextImport() {
+  var container = document.getElementById("groupsContainer");
+  if (container && !container.__ctxBound) {
+    container.__ctxBound = true;
+    // Gecko 43 понимает addEventListener("contextmenu") - подавляем родное
+    // меню только над бланком, остальной странице не мешаем.
+    if (container.addEventListener) {
+      container.addEventListener("contextmenu", function (e) {
+        if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+        var x = (typeof e.clientX === "number") ? e.clientX : 0;
+        var y = (typeof e.clientY === "number") ? e.clientY : 0;
+        // Не даём DnD увидеть правую кнопку как начало перетаскивания:
+        // DnD слушает только ЛКМ (e.button !== 0 - выход), так что тихо.
+        showGroupsCtxMenu(x, y);
+        return false;
+      }, false);
+    } else if (container.attachEvent) {
+      container.attachEvent("oncontextmenu", function () { return false; });
+    }
+  }
+  if (!document.__ctxGlobalBound) {
+    document.__ctxGlobalBound = true;
+    document.addEventListener("click", function (e) {
+      var m = document.getElementById("groupsCtxMenu");
+      if (!m || m.style.display === "none") return;
+      var el = e.target;
+      while (el) { if (el === m) return; el = el.parentNode; }
+      hideGroupsCtxMenu();
+    }, false);
+    document.addEventListener("keydown", function (e) {
+      var kc = e.keyCode || e.which;
+      if (kc === 27) {
+        hideGroupsCtxMenu();
+        var ov = document.getElementById("importOverlay");
+        if (ov && ov.style.display !== "none") closeTextImport();
+      }
+    }, false);
+    var ov0 = document.getElementById("importOverlay");
+    if (ov0) {
+      ov0.addEventListener("mousedown", function (e) {
+        if (e.target === ov0) closeTextImport();
+      }, false);
+    }
+    // В старых браузерах значение в поле появляется ПОСЛЕ события paste -
+    // обновляем превью с небольшой задержкой.
+    var ta0 = document.getElementById("importText");
+    if (ta0) {
+      var refreshSoon = function () { setTimeout(refreshImportPreview, 30); };
+      if (ta0.addEventListener) ta0.addEventListener("paste", refreshSoon, false);
+    }
+  }
+}
+
 function uiGenerateGroupsTable() {
   if (rxSessionOn) return;
+  blankIsImported = false;
   var container = document.getElementById("groupsContainer");
   var numStr = ("" + document.getElementById("numGroups").value).trim();
   if (numStr === "") { container.innerHTML = ""; validateInputs(); return; }
@@ -770,22 +1166,45 @@ function uiGenerateGroupsTable() {
   }
 
   var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
+  var monoOnly = document.getElementById("chkMonoOnly");
+  var wantMono = !!(monoOnly && monoOnly.checked);
   var generatedList = [];
 
-  for (var g = 0; g < grpCount; g++) {
-    var grp = "", lastChar = "", repCount = 0;
-    for (var c = 0; c < grpLen; c++) {
-      var candidate, attempts = 0;
+  if (wantMono) {
+    // МОНОГРУППЫ: в каждой группе все знаки одинаковые (напр. ЖЖЖЖЖ).
+    // Символ выбирается случайно из того же взвешенного пула, что и обычная
+    // генерация, поэтому приоритетные знаки («Знаки приоритетной отработки»)
+    // сохраняются. Не допускаем больше двух одинаковых моногрупп подряд,
+    // иначе весь бланк может оказаться одним знаком.
+    var prevMono = "", sameStreak = 0;
+    for (var mg = 0; mg < grpCount; mg++) {
+      var monoCh, monoTries = 0;
       do {
-        candidate = pool[Math.floor(Math.random() * pool.length)];
-        attempts++;
-      } while (candidate === lastChar && repCount >= 2 && attempts < 15);
-
-      if (candidate === lastChar) repCount++;
-      else { lastChar = candidate; repCount = 1; }
-      grp += candidate;
+        monoCh = pool[Math.floor(Math.random() * pool.length)];
+        monoTries++;
+      } while (monoCh === prevMono && sameStreak >= 2 && monoTries < 15);
+      if (monoCh === prevMono) sameStreak++;
+      else { prevMono = monoCh; sameStreak = 1; }
+      var monoGrp = "";
+      for (var mc = 0; mc < grpLen; mc++) monoGrp += monoCh;
+      generatedList.push(monoGrp);
     }
-    generatedList.push(grp);
+  } else {
+    for (var g = 0; g < grpCount; g++) {
+      var grp = "", lastChar = "", repCount = 0;
+      for (var c = 0; c < grpLen; c++) {
+        var candidate, attempts = 0;
+        do {
+          candidate = pool[Math.floor(Math.random() * pool.length)];
+          attempts++;
+        } while (candidate === lastChar && repCount >= 2 && attempts < 15);
+
+        if (candidate === lastChar) repCount++;
+        else { lastChar = candidate; repCount = 1; }
+        grp += candidate;
+      }
+      generatedList.push(grp);
+    }
   }
 
   renderGroupsFromList(generatedList);
@@ -815,6 +1234,7 @@ function clearAllTrainer() {
   inp.value = "";
   document.getElementById("accentCharset").value = "";
   document.getElementById("groupsContainer").innerHTML = "";
+  blankIsImported = false;
   document.getElementById("txtUserInput").value = "";
   document.getElementById("diffBox").style.display = "none";
   setUiText("examReport", "");

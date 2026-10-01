@@ -122,6 +122,13 @@
             <option value="SK">Международное SK (...-.-)</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Состав групп:</label>
+          <div class="mono-only-box">
+            <input type="checkbox" id="chkMonoOnly" onchange="uiGenerateGroupsTable()"/>
+            <label for="chkMonoOnly">Только моногруппы</label>
+          </div>
+        </div>
         <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()"><span>⟳ </span> Сформировать</button>
       </div>
       <div>
@@ -140,6 +147,7 @@
               </select>
               <button type="button" class="btn-mono-insert" id="btnInsertMono" onclick="insertMonoGroupFromPanel()">+ Вставить</button>
             </div>
+            <button type="button" class="btn-mono-insert" id="btnOpenImport" onclick="openTextImport()" title="Загрузить текст в бланк ">📥 ЗАГРУЗИТЬ</button>
           </div>
           <div><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
         </div>
@@ -331,6 +339,42 @@
           <button class="action-btn btn-check" id="btnTestTone" style="width:100%;height:32px" onclick="toggleTestTone()">🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="ctx-menu" id="groupsCtxMenu" style="display:none">
+  <div class="ctx-menu-item" onclick="openTextImport()">📥 Загрузить из буфера обмена…</div>
+  <div class="ctx-menu-item" onclick="copyRadiogramToClipboard()">📋 Скопировать радиограмму в буфер</div>
+  <div class="ctx-menu-sep"></div>
+  <div class="ctx-menu-item ctx-menu-danger" onclick="clearBlankGroups()">✖ Очистить группы бланка</div>
+</div>
+
+<div class="import-overlay" id="importOverlay" style="display:none">
+  <div class="import-panel" id="importPanel">
+    <div class="import-head">
+      <span>📥 ЗАГРУЗКА ТЕКСТА В БЛАНК</span>
+      <button type="button" class="import-x" onclick="closeTextImport()" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div class="import-hint" id="importHint">Вставьте текст сочетанием Ctrl+V либо считайте его из буфера обмена кнопкой ниже.</div>
+    <textarea id="importText" class="import-text" rows="4" placeholder="CQ CQ DE … / QSO 73 …" oninput="refreshImportPreview()"></textarea>
+    <div class="import-opts">
+      <div class="import-opt-row">
+        <label class="import-radio"><input type="radio" name="importMode" id="importModeStrict" checked="checked" onchange="refreshImportPreview()"/> Строго по N знаков</label>
+        <label class="import-n">N: <input type="number" id="importGroupLen" min="2" max="5" step="1" value="5" oninput="refreshImportPreview()" onchange="refreshImportPreview()"/></label>
+        <label class="import-radio"><input type="radio" name="importMode" id="importModeWords" onchange="refreshImportPreview()"/> По словам / пробелам</label>
+      </div>
+      <div class="import-opt-row">
+        <label class="import-check"><input type="checkbox" id="importPadEq" checked="checked" onchange="refreshImportPreview()"/> Добивать неполные группы знаком =</label>
+        <label class="import-check"><input type="checkbox" id="importSyncCharset" checked="checked" onchange="refreshImportPreview()"/> Добавить встреченные знаки в набор</label>
+      </div>
+    </div>
+    <div class="import-counter" id="importCounter"></div>
+    <div class="import-preview" id="importPreview"></div>
+    <div class="import-foot">
+      <button type="button" class="btn-hide-preview" onclick="readClipboardIntoImport()">📥 СЧИТАТЬ ИЗ БУФЕРА</button>
+      <button type="button" class="btn-gen" id="btnApplyImport" onclick="applyTextImport()">✓ В БЛАНК</button>
+      <button type="button" class="btn-hide-preview" onclick="closeTextImport()">✕ ОТМЕНА</button>
     </div>
   </div>
 </div>

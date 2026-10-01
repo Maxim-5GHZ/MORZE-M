@@ -47,7 +47,12 @@ header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-
 .controls-row-6>.form-group:nth-child(4){flex:1.4 1 100px}
 .controls-row-6>.form-group:nth-child(5){flex:2.4 1 160px}
 .controls-row-6>.form-group:nth-child(6){flex:2.2 1 150px}
+.controls-row-6>.form-group-check{flex:1.3 1 120px}
 .controls-row-6>.btn-gen{flex:1.6 1 110px;margin:4px;height:30px}
+.mono-only-box{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center;height:30px;background:var(--screen-bg);border:1px solid #33422d;padding:0 8px;cursor:pointer}
+.mono-only-box:hover{background:#1d2919;border-color:var(--mil-amber)}
+.mono-only-box input[type="checkbox"]{margin:0 7px 0 0;width:auto;height:auto;padding:0}
+.mono-only-box label{font-size:10px;font-weight:bold;color:var(--mil-amber);margin:0;cursor:pointer;white-space:nowrap}
 .grid-2{display:-moz-box;display:-webkit-box;display:flex;margin:0 -6px}
 .grid-2>.panel{-moz-box-flex:1;flex:1 1 0;margin:0 6px 12px 6px;min-width:0}
 @media(max-width:768px){.inputs-2col,.grid-2,.controls-row-6{display:block;margin:0 0 8px 0}.inputs-2col>.form-group,.grid-2>.panel,.controls-row-6>.form-group,.controls-row-6>.btn-gen{margin:0 0 8px 0;width:100%!important}}
@@ -176,3 +181,31 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
 .morse-card .code{color:var(--mil-green);font-size:11px;margin:2px 0}
 .morse-card .mnemonic{color:var(--mil-dim);font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .live-morse-buffer{font-size:11px;color:var(--mil-amber);font-weight:bold;min-height:18px;margin-top:4px;letter-spacing:2px}
+.ctx-menu{position:fixed;z-index:9999;min-width:230px;background:#141c11;border:1px solid #4a5c44;box-shadow:0 8px 20px rgba(0,0,0,.65);padding:3px}
+.ctx-menu-item{padding:8px 10px;cursor:pointer;color:var(--mil-green);font-size:11px;font-weight:bold;white-space:nowrap}
+.ctx-menu-item:hover{background:#21301d;color:var(--mil-amber)}
+.ctx-menu-danger{color:#ff9691}
+.ctx-menu-danger:hover{background:#331312;color:#ff9691}
+.ctx-menu-sep{height:1px;background:#2e3b28;margin:3px 4px}
+.import-overlay{position:fixed;left:0;top:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,.62);overflow-y:auto}
+.import-panel{width:560px;max-width:92%;margin:36px auto;background:#141b12;border:1px solid #4a5c44;box-shadow:0 10px 28px rgba(0,0,0,.7);padding:10px 12px 12px 12px}
+.import-head{display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:justify;justify-content:space-between;-moz-box-align:center;align-items:center;margin-bottom:6px;color:var(--mil-amber);font-size:11px;font-weight:bold;letter-spacing:1px}
+.import-x{background:transparent;border:1px solid var(--btn-border);color:var(--mil-dim);font-family:inherit;font-weight:bold;font-size:10px;padding:2px 8px;cursor:pointer}
+.import-x:hover{border-color:var(--mil-amber);color:var(--mil-amber)}
+.import-hint{font-size:10px;color:var(--mil-dim);margin-bottom:6px}
+.import-hint.ok{color:var(--mil-green)}
+.import-hint.warn{color:#ff9691}
+.import-text{width:100%;min-height:86px;max-height:220px;resize:vertical;color:var(--mil-green);font-size:12px;letter-spacing:2px}
+.import-opts{margin:8px 0 4px 0}
+.import-opt-row{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.import-radio,.import-check{display:-moz-box;display:-webkit-box;display:flex;-moz-box-align:center;-webkit-box-align:center;align-items:center;font-size:10px;font-weight:bold;color:var(--mil-dim);margin-right:14px;cursor:pointer}
+.import-radio input,.import-check input{margin:0 6px 0 0;width:auto}
+.import-n{font-size:10px;font-weight:bold;color:var(--mil-dim);margin-right:14px}
+.import-n input{width:52px;text-align:center;margin-left:4px}
+.import-counter{font-size:10px;font-weight:bold;color:var(--mil-amber);margin:4px 0;letter-spacing:.5px}
+.import-counter.over{color:#ff9691}
+.import-preview{max-height:150px;overflow-y:auto;background:var(--screen-bg);border:1px solid #33422d;padding:6px 8px;font-size:12px;font-weight:bold;letter-spacing:2px;color:var(--mil-green);word-break:break-all}
+.import-preview .import-empty{color:var(--mil-dim);font-weight:normal;letter-spacing:0}
+.import-foot{display:-moz-box;display:-webkit-box;display:flex;-moz-box-pack:end;justify-content:flex-end;margin-top:10px}
+.import-foot button{margin-left:6px;height:30px}
+.import-foot .btn-gen{padding:0 14px}
