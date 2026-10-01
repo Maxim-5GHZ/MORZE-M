@@ -71,6 +71,19 @@ header{background:#11160f;padding:8px 12px;border-bottom:2px solid var(--border-
 input[type="text"],input[type="number"],select,textarea{background:var(--screen-bg);border:1px solid #33422d;color:var(--mil-green);padding:5px 8px;font-family:inherit;font-size:12px;font-weight:bold;outline:none;width:100%}
 select{height:30px;cursor:pointer}
 select option{background:#141c11;color:#38e038}
+.ramp-dropdown{position:relative}
+.ramp-dropdown .ramp-current{display:block;width:100%;padding:5px 8px;background:var(--screen-bg);border:1px solid #33422d;color:var(--mil-green);font-family:inherit;font-size:12px;font-weight:bold;cursor:pointer;text-align:left;outline:none}
+.ramp-dropdown .ramp-current:hover{border-color:#4a5c44}
+.ramp-dropdown .ramp-current span{display:inline-block;vertical-align:middle}
+.ramp-dropdown .ramp-current svg{display:inline-block;vertical-align:middle;width:84px;height:14px;margin:0 0 0 8px}
+.ramp-dropdown .ramp-current::after{content:"▼";display:inline-block;vertical-align:middle;margin-left:8px;font-size:8px;color:var(--mil-dim)}
+.ramp-options{display:none;position:absolute;top:100%;left:0;right:0;z-index:60;margin:2px 0 0;padding:0;list-style:none;background:#141c11;border:1px solid #4a5c44;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.65);max-height:220px;overflow-y:auto}
+.ramp-dropdown.open .ramp-options{display:block}
+.ramp-dropdown.up .ramp-options{top:auto;bottom:100%;margin:0 0 2px}
+.ramp-options li{display:block;padding:10px 10px;cursor:pointer;color:var(--mil-green);font-size:12px;font-weight:bold}
+.ramp-options li:hover,.ramp-options li.active{background:#21301d;color:var(--mil-amber)}
+.ramp-options li span{display:inline-block;vertical-align:middle}
+.ramp-options li svg{display:inline-block;vertical-align:middle;width:84px;height:14px;margin:0 0 0 8px}
 input:disabled,select:disabled,textarea:disabled{opacity:0.45;cursor:not-allowed;background:#090d07}
 input:focus:not(:disabled),select:focus:not(:disabled),textarea:focus:not(:disabled){border-color:var(--mil-amber)}
 .teacher-auto-expand{color:var(--mil-amber)!important;font-size:13px!important;letter-spacing:2px;min-height:38px;height:auto;resize:none;overflow-y:hidden;line-height:1.45;word-break:break-word;white-space:pre-wrap}
@@ -128,8 +141,14 @@ input[type="range"]::-moz-range-progress{background:#2e4527;height:6px}
 .btn-start:hover:not(:disabled){background:#325f28}
 .btn-stop{background:#5a1e1c;border-color:#7b2926;color:#fff}
 .btn-stop:hover:not(:disabled){background:#6e2523}
+.btn-resume{background:#6b4f13;border-color:#8f6a1c;color:#fff}
+.btn-resume:hover:not(:disabled){background:#85601a}
+.btn-reset{background:#7a2a1e;border-color:#9c3628;color:#fff}
+.btn-reset:hover:not(:disabled){background:#933326}
 .btn-check{background:#23374c;border-color:#385678;color:#fff}
 .btn-check:hover:not(:disabled){background:#2c4763}
+.rx-status{min-height:13px;margin-top:6px;font-size:10px;font-weight:bold;letter-spacing:.4px;color:var(--mil-amber)}
+.rx-status.paused{color:var(--mil-red)}
 textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size:12px;letter-spacing:2px}
 .rx-result{background:var(--screen-bg);border:1px solid #303d2a;padding:8px;font-size:12px;letter-spacing:2px;white-space:pre-wrap;word-break:break-all}
 .char-err{color:#fff;background:#621412;font-weight:bold;padding:0 2px}
@@ -320,6 +339,7 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
           <button class="action-btn btn-stop" id="btnRxStop" disabled>СТОП</button>
           <button class="action-btn btn-check" id="btnRxCheck">КОНТРОЛЬ</button>
         </div>
+        <div class="rx-status" id="rxStatus"></div>
       </div>
     </div>
     <div class="panel" style="margin-bottom:0">
@@ -413,10 +433,28 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
         </div>
         <div class="form-group">
           <label>Профиль огибающей:</label>
-          <select id="selRampShape" onchange="applyAudioParamsNow()">
-            <option value="rc" selected>Экспоненциальный RC</option>
-            <option value="linear">Линейный трапецеидальный</option>
-          </select>
+          <div class="ramp-dropdown" id="selRampShape">
+            <button type="button" class="ramp-current" onclick="rampDropdownToggle(event)">
+              <span id="rampCurText">Экспоненциальный RC</span>
+              <svg id="rampCurSvg" viewBox="0 0 300 40" preserveAspectRatio="none">
+                <path d="M0,20 L3.1,18.9 L6.3,16.1 L9.4,13.1 L12.5,11 L15.6,10.4 L18.8,12 L21.9,15.3 L25,20 L28.1,25.1 L31.3,30 L34.4,33.3 L37.5,36 L40.6,34.8 L43.8,31.2 L46.9,26.1 L50,20 L53.1,13.9 L56.3,8.6 L59.4,5.2 L62.5,4.8 L65.6,6.8 L68.8,10.6 L71.9,15.3 L75,20 L78.1,24.2 L81.3,27.3 L84.4,28.9 L87.5,29 L90.6,27.8 L93.8,25.6 L96.9,22.8 L100,20 L103.1,17.5 L106.3,15.7 L109.4,14.7 L112.5,14.6 L115.6,15.4 L118.8,16.7 L121.9,18.3 L125,20 L128.1,21.5 L131.3,22.6 L134.4,23.1 L137.5,23.2 L140.6,22.8 L143.8,22 L146.9,21 L150,20 L153.1,19.1 L156.3,18.5 L159.4,18.1 L162.5,18.1 L165.6,18.4 L168.8,18.8 L171.9,19.4 L175,20 L178.1,20.5 L181.3,20.9 L184.4,21.1 L187.5,21.1 L190.6,21 L193.8,20.7 L196.9,20.4 L200,20 L203.1,19.7 L206.3,19.5 L209.4,19.3 L212.5,19.3 L215.6,19.4 L218.8,19.6 L221.9,19.8 L225,20 L228.1,20.2 L231.3,20.3 L234.4,20.4 L237.5,20.4 L240.6,20.3 L243.8,20.2 L246.9,20.1 L250,20 L253.1,19.9 L256.3,19.8 L259.4,19.8 L262.5,19.8 L265.6,19.8 L268.8,19.9 L271.9,19.9 L275,20 L278.1,20.1 L281.3,20.1 L284.4,20.1 L287.5,20.1 L290.6,20.1 L293.8,20.1 L296.9,20 L300,20 L300,20 L296.9,20 L293.8,19.9 L290.6,19.9 L287.5,19.9 L284.4,19.9 L281.3,19.9 L278.1,19.9 L275,20 L271.9,20.1 L268.8,20.1 L265.6,20.2 L262.5,20.2 L259.4,20.2 L256.3,20.2 L253.1,20.1 L250,20 L246.9,19.9 L243.8,19.8 L240.6,19.7 L237.5,19.6 L234.4,19.6 L231.3,19.7 L228.1,19.8 L225,20 L221.9,20.2 L218.8,20.4 L215.6,20.6 L212.5,20.7 L209.4,20.7 L206.3,20.5 L203.1,20.3 L200,20 L196.9,19.6 L193.8,19.3 L190.6,19 L187.5,18.9 L184.4,18.9 L181.3,19.1 L178.1,19.5 L175,20 L171.9,20.6 L168.8,21.2 L165.6,21.6 L162.5,21.9 L159.4,21.9 L156.3,21.5 L153.1,20.9 L150,20 L146.9,19 L143.8,18 L140.6,17.2 L137.5,16.8 L134.4,16.9 L131.3,17.4 L128.1,18.5 L125,20 L121.9,21.7 L118.8,23.3 L115.6,24.6 L112.5,25.4 L109.4,25.3 L106.3,24.3 L103.1,22.5 L100,20 L96.9,17.2 L93.8,14.4 L90.6,12.2 L87.5,11 L84.4,11.1 L81.3,12.7 L78.1,15.8 L75,20 L71.9,24.7 L68.8,29.4 L65.6,33.2 L62.5,35.2 L59.4,34.8 L56.3,31.4 L53.1,26.1 L50,20 L46.9,13.9 L43.8,8.8 L40.6,5.2 L37.5,4 L34.4,6.7 L31.3,10 L28.1,14.9 L25,20 L21.9,24.7 L18.8,28 L15.6,29.6 L12.5,29 L9.4,26.9 L6.3,23.9 L3.1,21.1 L0,20 Z" fill="#ffb000" fill-opacity="0.55"/>
+              </svg>
+            </button>
+            <ul class="ramp-options" id="rampOptions">
+              <li data-value="rc" class="active" onclick="rampDropdownSelect(this, event)">
+                <span>Экспоненциальный RC</span>
+                <svg viewBox="0 0 300 40" preserveAspectRatio="none">
+                  <path d="M0,20 L3.1,18.9 L6.3,16.1 L9.4,13.1 L12.5,11 L15.6,10.4 L18.8,12 L21.9,15.3 L25,20 L28.1,25.1 L31.3,30 L34.4,33.3 L37.5,36 L40.6,34.8 L43.8,31.2 L46.9,26.1 L50,20 L53.1,13.9 L56.3,8.6 L59.4,5.2 L62.5,4.8 L65.6,6.8 L68.8,10.6 L71.9,15.3 L75,20 L78.1,24.2 L81.3,27.3 L84.4,28.9 L87.5,29 L90.6,27.8 L93.8,25.6 L96.9,22.8 L100,20 L103.1,17.5 L106.3,15.7 L109.4,14.7 L112.5,14.6 L115.6,15.4 L118.8,16.7 L121.9,18.3 L125,20 L128.1,21.5 L131.3,22.6 L134.4,23.1 L137.5,23.2 L140.6,22.8 L143.8,22 L146.9,21 L150,20 L153.1,19.1 L156.3,18.5 L159.4,18.1 L162.5,18.1 L165.6,18.4 L168.8,18.8 L171.9,19.4 L175,20 L178.1,20.5 L181.3,20.9 L184.4,21.1 L187.5,21.1 L190.6,21 L193.8,20.7 L196.9,20.4 L200,20 L203.1,19.7 L206.3,19.5 L209.4,19.3 L212.5,19.3 L215.6,19.4 L218.8,19.6 L221.9,19.8 L225,20 L228.1,20.2 L231.3,20.3 L234.4,20.4 L237.5,20.4 L240.6,20.3 L243.8,20.2 L246.9,20.1 L250,20 L253.1,19.9 L256.3,19.8 L259.4,19.8 L262.5,19.8 L265.6,19.8 L268.8,19.9 L271.9,19.9 L275,20 L278.1,20.1 L281.3,20.1 L284.4,20.1 L287.5,20.1 L290.6,20.1 L293.8,20.1 L296.9,20 L300,20 L300,20 L296.9,20 L293.8,19.9 L290.6,19.9 L287.5,19.9 L284.4,19.9 L281.3,19.9 L278.1,19.9 L275,20 L271.9,20.1 L268.8,20.1 L265.6,20.2 L262.5,20.2 L259.4,20.2 L256.3,20.2 L253.1,20.1 L250,20 L246.9,19.9 L243.8,19.8 L240.6,19.7 L237.5,19.6 L234.4,19.6 L231.3,19.7 L228.1,19.8 L225,20 L221.9,20.2 L218.8,20.4 L215.6,20.6 L212.5,20.7 L209.4,20.7 L206.3,20.5 L203.1,20.3 L200,20 L196.9,19.6 L193.8,19.3 L190.6,19 L187.5,18.9 L184.4,18.9 L181.3,19.1 L178.1,19.5 L175,20 L171.9,20.6 L168.8,21.2 L165.6,21.6 L162.5,21.9 L159.4,21.9 L156.3,21.5 L153.1,20.9 L150,20 L146.9,19 L143.8,18 L140.6,17.2 L137.5,16.8 L134.4,16.9 L131.3,17.4 L128.1,18.5 L125,20 L121.9,21.7 L118.8,23.3 L115.6,24.6 L112.5,25.4 L109.4,25.3 L106.3,24.3 L103.1,22.5 L100,20 L96.9,17.2 L93.8,14.4 L90.6,12.2 L87.5,11 L84.4,11.1 L81.3,12.7 L78.1,15.8 L75,20 L71.9,24.7 L68.8,29.4 L65.6,33.2 L62.5,35.2 L59.4,34.8 L56.3,31.4 L53.1,26.1 L50,20 L46.9,13.9 L43.8,8.8 L40.6,5.2 L37.5,4 L34.4,6.7 L31.3,10 L28.1,14.9 L25,20 L21.9,24.7 L18.8,28 L15.6,29.6 L12.5,29 L9.4,26.9 L6.3,23.9 L3.1,21.1 L0,20 Z" fill="#ffb000" fill-opacity="0.55"/>
+                </svg>
+              </li>
+              <li data-value="linear" onclick="rampDropdownSelect(this, event)">
+                <span>Линейный трапецеидальный</span>
+                <svg viewBox="0 0 300 40" preserveAspectRatio="none">
+                  <path d="M0,20 L3.1,19.7 L6.3,19 L9.4,18.1 L12.5,17.3 L15.6,16.9 L18.8,17.2 L21.9,18.2 L25,20 L28.1,22.3 L31.3,24.8 L34.4,26.8 L37.5,28 L40.6,28 L43.8,26.6 L46.9,23.8 L50,20 L53.1,15.7 L56.3,11.5 L59.4,8.3 L62.5,6.7 L65.6,7.1 L68.8,9.7 L71.9,14.2 L75,20 L78.1,26.1 L81.3,31.4 L84.4,34.8 L87.5,36 L90.6,34.8 L93.8,31.2 L96.9,26.1 L100,20 L103.1,13.9 L106.3,8.6 L109.4,5.2 L112.5,4 L115.6,5.2 L118.8,8.8 L121.9,13.9 L125,20 L128.1,26.1 L131.3,31.4 L134.4,34.8 L137.5,36 L140.6,34.8 L143.8,31.2 L146.9,26.1 L150,20 L153.1,13.9 L156.3,8.6 L159.4,5.2 L162.5,4 L165.6,5.3 L168.8,9.3 L171.9,14.5 L175,20 L178.1,25 L181.3,28.9 L184.4,31 L187.5,31.2 L190.6,29.7 L193.8,26.9 L196.9,23.5 L200,20 L203.1,17 L206.3,14.9 L209.4,14 L212.5,14.1 L215.6,15.2 L218.8,16.8 L221.9,18.5 L225,20 L228.1,21 L231.3,21.3 L234.4,21.1 L237.5,20.5 L240.6,20 L243.8,20 L246.9,20 L250,20 L253.1,20 L256.3,20 L259.4,20 L262.5,20 L265.6,20 L268.8,20 L271.9,20 L275,20 L278.1,20 L281.3,20 L284.4,20 L287.5,20 L290.6,20 L293.8,20 L296.9,20 L300,20 L300,20 L296.9,20 L293.8,20 L290.6,20 L287.5,20 L284.4,20 L281.3,20 L278.1,20 L275,20 L271.9,20 L268.8,20 L265.6,20 L262.5,20 L259.4,20 L256.3,20 L253.1,20 L250,20 L246.9,20 L243.8,20 L240.6,20 L237.5,19.5 L234.4,18.9 L231.3,18.7 L228.1,19 L225,20 L221.9,21.5 L218.8,23.2 L215.6,24.8 L212.5,25.9 L209.4,26 L206.3,25.1 L203.1,23 L200,20 L196.9,16.5 L193.8,13.1 L190.6,10.3 L187.5,8.8 L184.4,9 L181.3,11.1 L178.1,15 L175,20 L171.9,25.5 L168.8,30.7 L165.6,34.7 L162.5,36 L159.4,34.8 L156.3,31.4 L153.1,26.1 L150,20 L146.9,13.9 L143.8,8.8 L140.6,5.2 L137.5,4 L134.4,5.2 L131.3,8.6 L128.1,13.9 L125,20 L121.9,26.1 L118.8,31.2 L115.6,34.8 L112.5,36 L109.4,34.8 L106.3,31.4 L103.1,26.1 L100,20 L96.9,13.9 L93.8,8.8 L90.6,5.2 L87.5,4 L84.4,5.2 L81.3,8.6 L78.1,13.9 L75,20 L71.9,25.8 L68.8,30.3 L65.6,32.9 L62.5,33.3 L59.4,31.7 L56.3,28.5 L53.1,24.3 L50,20 L46.9,16.2 L43.8,13.4 L40.6,12 L37.5,12 L34.4,13.2 L31.3,15.2 L28.1,17.7 L25,20 L21.9,21.8 L18.8,22.8 L15.6,23.1 L12.5,22.7 L9.4,21.9 L6.3,21 L3.1,20.3 L0,20 Z" fill="#ffb000" fill-opacity="0.55"/>
+                </svg>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
       <div class="panel">
@@ -704,6 +742,16 @@ function ensureCharInCharset(ch) {
 var audioCtx = null, mainToneOsc = null, keyingGain = null, qsbGain = null, qsbLfo = null, qsbDepthGain = null, masterToneGain = null;
 var noiseNode = null, noiseGain = null, qrmOsc = null, qrmGain = null;
 var noiseEnabled = false, rxActive = false, isTestToneOn = false;
+// Текущее значение громкости ключа (JS-зеркало AudioParam: в старых Gecko
+// param.value не отражает значение во время автоматизации).
+var keyGainValue = 0;
+// Кэш последних применённых параметров: одинаковые значения повторно не
+// планируются, иначе в старых браузерах копились события на одном батче.
+var lastAudioParams = { freq: -1, vol: -1, noiseVol: -1, qrmVol: -1, qsbDepth: -1, qsbPeriod: -1 };
+// Сессия приёма жива: передача идёт ИЛИ стоит на паузе (кнопка «ПРОДОЛЖИТЬ»).
+// rxActive означает только «шаг передачи выполняется», поэтому блокировку бланка
+// и шум эфира надо вести по rxSessionOn, иначе пауза всё разморозит.
+var rxSessionOn = false;
 
 function initAudio() {
   if (audioCtx) {
@@ -793,31 +841,51 @@ function initAudio() {
   }
 }
 
+function smoothParam(param, value, tau) {
+  var now = audioCtx.currentTime;
+  try { param.cancelScheduledValues(now); } catch (e) {}
+  param.setTargetAtTime(value, now, tau);
+}
+
 function applyAudioParamsNow() {
-  if (!audioCtx) return;
+  if (!audioCtx || audioCtx.state === "closed") return;
   try {
-    var now = audioCtx.currentTime;
     var freq = parseFloat(document.getElementById("rngToneFreq").value) || 700;
     var vol = ((parseFloat(document.getElementById("rngToneVol").value) || 70) / 100) * 0.4;
-    mainToneOsc.frequency.setValueAtTime(freq, now);
-    masterToneGain.gain.setValueAtTime(vol, now);
+    if (freq !== lastAudioParams.freq) {
+      lastAudioParams.freq = freq;
+      smoothParam(mainToneOsc.frequency, freq, 0.006);
+    }
+    if (vol !== lastAudioParams.vol) {
+      lastAudioParams.vol = vol;
+      smoothParam(masterToneGain.gain, vol, 0.01);
+    }
 
-    var isNoiseAudible = (noiseEnabled && rxActive) || isTestToneOn;
+    var isNoiseAudible = (noiseEnabled && rxSessionOn) || isTestToneOn;
     var nVol = isNoiseAudible ? parseFloat(document.getElementById("rngNoiseVol").value) / 250 : 0;
-    noiseGain.gain.setTargetAtTime(nVol, now, 0.02);
+    if (nVol !== lastAudioParams.noiseVol) {
+      lastAudioParams.noiseVol = nVol;
+      smoothParam(noiseGain.gain, nVol, 0.02);
+    }
 
     var qVol = isNoiseAudible ? parseFloat(document.getElementById("rngQrmVol").value) / 350 : 0;
-    qrmGain.gain.setTargetAtTime(qVol, now, 0.02);
+    if (qVol !== lastAudioParams.qrmVol) {
+      lastAudioParams.qrmVol = qVol;
+      smoothParam(qrmGain.gain, qVol, 0.02);
+    }
 
     var qsbActive = noiseEnabled || isTestToneOn;
     var qsbDepth = qsbActive ? parseFloat(document.getElementById("rngQsbDepth").value) / 100 : 0;
     var qsbPeriod = Math.max(1.0, parseFloat(document.getElementById("rngQsbPeriod").value) / 10);
-    qsbLfo.frequency.setValueAtTime(1 / qsbPeriod, now);
-
-    var midGain = 1.0 - qsbDepth * 0.48;
-    var lfoAmp = qsbDepth * 0.48;
-    qsbGain.gain.setTargetAtTime(midGain, now, 0.02);
-    qsbDepthGain.gain.setTargetAtTime(lfoAmp, now, 0.02);
+    if (qsbPeriod !== lastAudioParams.qsbPeriod) {
+      lastAudioParams.qsbPeriod = qsbPeriod;
+      smoothParam(qsbLfo.frequency, 1 / qsbPeriod, 0.02);
+    }
+    if (qsbDepth !== lastAudioParams.qsbDepth) {
+      lastAudioParams.qsbDepth = qsbDepth;
+      smoothParam(qsbGain.gain, 1.0 - qsbDepth * 0.48, 0.02);
+      smoothParam(qsbDepthGain.gain, qsbDepth * 0.48, 0.02);
+    }
   } catch (e) {}
 }
 
@@ -833,11 +901,12 @@ function toneOn(source) {
     var shape = document.getElementById("selRampShape").value;
     keyingGain.gain.cancelScheduledValues(now);
     if (shape === "linear") {
-      keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
+      keyingGain.gain.setValueAtTime(keyGainValue, now);
       keyingGain.gain.linearRampToValueAtTime(1.0, now + rampSec);
     } else {
       keyingGain.gain.setTargetAtTime(1.0, now, rampSec / 2.5);
     }
+    keyGainValue = 1.0;
   } catch (e) {}
 }
 
@@ -853,11 +922,12 @@ function toneOff(source) {
     var shape = document.getElementById("selRampShape").value;
     keyingGain.gain.cancelScheduledValues(now);
     if (shape === "linear") {
-      keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
+      keyingGain.gain.setValueAtTime(keyGainValue, now);
       keyingGain.gain.linearRampToValueAtTime(0.0001, now + rampSec);
     } else {
       keyingGain.gain.setTargetAtTime(0.0001, now, rampSec / 2.5);
     }
+    keyGainValue = 0.0001;
   } catch (e) {}
 }
 
@@ -1074,6 +1144,15 @@ function clearAllHighlights() {
 
 var rxActiveGeneration = 0, targetRadiogram = "";
 
+// ТРАНСПОРТ ПРИЁМА: состояние кнопок и возобновляемая передача радиограммы.
+// rxRun переживает нажатие «СТОП», поэтому «ПРОДОЛЖИТЬ» продолжает ровно с места
+// обрыва; rxRunId защищает от «хвостов» предыдущей цепочки промисов.
+var RX_IDLE = 0, RX_PLAYING = 1, RX_PAUSED = 2;
+var rxState = RX_IDLE, rxRunId = 0, rxRun = null;
+var RX_STAGE_PRE = 0, RX_STAGE_PRE_PAUSE = 1, RX_STAGE_GROUP = 2,
+    RX_STAGE_POST = 3, RX_STAGE_POST_PAUSE = 4, RX_STAGE_DONE = 5;
+var RX_TECH_PAUSE_MS = 1200;   // технологическая пауза после зачина и после окончания
+
 function sleepRx(ms) {
   var gen = rxActiveGeneration;
   return workerSleep(ms).then(function () {
@@ -1131,130 +1210,241 @@ function getSignalItems(selId, codesByMode) {
   return codes || [];
 }
 
-function playSignalChain(codes) {
-  var cIdx = 0;
+// ПЕРЕДАЧА РАДИОГРАММЫ, ПРИОСТАНАВЛИВАЕМАЯ С МЕСТА ОБРЫВА
+// Шаг передачи = один тон или одна пауза. rxNextAction() только ВЫБИРАЕТ шаг,
+// не двигая позицию; позиция применяется функцией commit() лишь после того, как
+// сон шага действительно завершился. Поэтому при СТОП посреди тона или паузы
+// состояние остаётся на этом шаге, и «ПРОДОЛЖИТЬ» проигрывает его заново целиком.
+function rxNextAction() {
+  var st = rxRun, t = getLiveAtomTimings();
 
-  function nextCode() {
-    if (cIdx >= codes.length || !rxActive) return Promise.resolve();
-    var code = codes[cIdx++];
-    var s = 0;
-
-    function nextSym() {
-      if (s >= code.length || !rxActive) {
-        var t = getLiveAtomTimings();
-        return sleepRx(t.charPauseMs);
-      }
-      var t = getLiveAtomTimings();
-      toneOn("RX");
-      return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-        toneOff("RX");
-        return sleepRx(t.elemPauseMs);
-      }).then(function () {
-        s++;
-        return nextSym();
-      });
+  // --- служебные сигналы: зачин (0) и окончание (3) ---
+  if (st.stage === RX_STAGE_PRE || st.stage === RX_STAGE_POST) {
+    var codes = st.stage === RX_STAGE_PRE ? st.pre : st.post;
+    if (st.ci >= codes.length) { st.stage++; return rxNextAction(); }
+    var code = codes[st.ci];
+    // межэлементная пауза внутри знака (после каждой точки/тире)
+    if (st.el) {
+      return { tone: false, dur: t.elemPauseMs, commit: function () { st.el = false; } };
     }
-
-    return nextSym().then(nextCode);
+    if (st.si < code.length) {
+      var si = st.si + 1;
+      var sigDur = code[st.si] === "." ? t.dotMs : t.dashMs;
+      return {
+        tone: true, dur: sigDur,
+        commit: function () { st.si = si; st.el = true; }
+      };
+    }
+    // конец служебного знака — межзнаковая пауза
+    var ci = st.ci + 1;
+    return {
+      tone: false, dur: t.charPauseMs,
+      commit: function () { st.ci = ci; st.si = 0; }
+    };
   }
 
-  return nextCode();
-}
-
-// Блок служебных сигналов (зачин/концовка) с последующей технологической паузой
-function playSignalBlock(codes) {
-  if (!codes || codes.length === 0 || !rxActive) return Promise.resolve();
-  return playSignalChain(codes).then(function () {
-    return sleepRx(1200);
-  });
-}
-
-function playRadiogramProcess(groups, repeats, charRepeats) {
-  charRepeats = charRepeats || 1;
-  var preambleCodes = getSignalItems("selPreambleMode", PREAMBLE_CODES);
-  var postambleCodes = getSignalItems("selPostambleMode", POSTAMBLE_CODES);
-
-  return playSignalBlock(preambleCodes).then(function () {
-    var g = 0;
-    function nextGroup() {
-      if (g >= groups.length || !rxActive) return Promise.resolve();
-      var grp = groups[g], r = 0;
-      function nextRepeat() {
-        if (r >= repeats || !rxActive) { g++; return nextGroup(); }
-        highlightGroup(g);
-        var cell = document.getElementById("grp-cell-" + g);
-        if (cell) {
-          var slots = cell.querySelectorAll(".char-slot");
-          for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
-        }
-        var c = 0;
-        function nextChar() {
-          if (c >= grp.length || !rxActive) {
-            var t = getLiveAtomTimings();
-            return sleepRx(t.groupPauseMs).then(function () { r++; return nextRepeat(); });
-          }
-          var code = MORSE_MAP[grp[c]];
-          if (!code) {
-            // Неизвестный знак: одна межзнаковая пауза, повторения не применяются
-            var t0 = getLiveAtomTimings();
-            return sleepRx(t0.charPauseMs).then(function () { c++; return nextChar(); });
-          }
-          highlightChar(g, c);
-          var k = 0;
-          // ПОВТОРЕНИЕ ЗНАКА: один и тот же знак charRepeats раз подряд,
-          // раздельно межзнаковой паузой (слитный приём удвоенных знаков)
-          function nextCharRepeat() {
-            if (k >= charRepeats || !rxActive) {
-              releaseCharHighlight(g, c);
-              c++;
-              return nextChar();
-            }
-            k++;
-            var s = 0;
-            function nextSymbol() {
-              if (s >= code.length || !rxActive) {
-                var t = getLiveAtomTimings();
-                return sleepRx(t.charPauseMs).then(function () { return nextCharRepeat(); });
-              }
-              var t = getLiveAtomTimings();
-              toneOn("RX");
-              return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-                toneOff("RX");
-                return sleepRx(t.elemPauseMs);
-              }).then(function () { s++; return nextSymbol(); });
-            }
-            return nextSymbol();
-          }
-          return nextCharRepeat();
-        }
-        return nextChar();
-      }
-      return nextRepeat();
+  // --- технологическая пауза после зачина и после окончания ---
+  if (st.stage === RX_STAGE_PRE_PAUSE || st.stage === RX_STAGE_POST_PAUSE) {
+    var nextStage = st.stage + 1;
+    // без зачина/окончания паузы нет — как и в прежней реализации
+    if (st.stage === RX_STAGE_PRE_PAUSE ? st.pre.length === 0 : st.post.length === 0) {
+      st.stage = nextStage;
+      return rxNextAction();
     }
-    return nextGroup();
-  }).then(function () {
-    // Окончание (концовка) после передачи радиограммы + технологическая пауза
-    return playSignalBlock(postambleCodes);
+    return {
+      tone: false, dur: RX_TECH_PAUSE_MS,
+      commit: function () { st.stage = nextStage; }
+    };
+  }
+
+  if (st.stage >= RX_STAGE_DONE) return null;
+
+  // --- группы радиограммы ---
+  if (st.g >= st.groups.length) {
+    // переход к окончанию: счётчики служебных кодов стартуют заново
+    st.stage = RX_STAGE_POST;
+    st.ci = 0; st.si = 0; st.el = false;
+    return rxNextAction();
+  }
+
+  var grp = st.groups[st.g];
+  if (st.c === 0 && st.k === 0 && st.s === 0) {
+    // вход в группу (или в её повтор). Идемпотентно: повтор при ПРОДОЛЖИТЬ не мешает
+    highlightGroup(st.g);
+    var cell = document.getElementById("grp-cell-" + st.g);
+    if (cell) {
+      var slots = cell.querySelectorAll(".char-slot");
+      for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
+    }
+    setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
+  }
+
+  if (st.c >= grp.length) {
+    // группа отработана: пауза между группами, затем следующий повтор или группа
+    var r = st.r + 1;
+    var isLast = r >= st.repeats;
+    return {
+      tone: false, dur: t.groupPauseMs,
+      commit: function () {
+        st.r = isLast ? 0 : r;
+        if (isLast) st.g++;
+        st.c = 0; st.k = 0; st.s = 0; st.el = false;
+      }
+    };
+  }
+
+  var charCode = MORSE_MAP[grp[st.c]];
+  if (!charCode) {
+    // Неизвестный знак: одна межзнаковая пауза, повторения не применяются
+    var c0 = st.c + 1;
+    return {
+      tone: false, dur: t.charPauseMs,
+      commit: function () { st.c = c0; st.k = 0; st.s = 0; st.el = false; }
+    };
+  }
+
+  // межэлементная пауза внутри знака (после каждой точки/тире)
+  if (st.el) {
+    return { tone: false, dur: t.elemPauseMs, commit: function () { st.el = false; } };
+  }
+
+  if (st.k >= st.charRepeats) {
+    // повторы знака исчерпаны — переход к следующему знаку группы
+    releaseCharHighlight(st.g, st.c);
+    var c1 = st.c + 1;
+    st.c = c1; st.k = 0; st.s = 0; st.el = false;
+    return rxNextAction();
+  }
+
+  if (st.s < charCode.length) {
+    if (st.k === 0) highlightChar(st.g, st.c);
+    var s0 = st.s + 1;
+    var charDur = charCode[st.s] === "." ? t.dotMs : t.dashMs;
+    return {
+      tone: true, dur: charDur,
+      commit: function () { st.s = s0; st.el = true; }
+    };
+  }
+
+  // конец знака (или его повтора) — межзнаковая пауза и счётчик повторов
+  return {
+    tone: false, dur: t.charPauseMs,
+    commit: function () { st.s = 0; st.k++; st.el = false; }
+  };
+}
+
+function rxStep() {
+  var plan = rxNextAction();
+  if (!plan) return Promise.resolve();
+  if (plan.tone) toneOn("RX");
+  return sleepRx(plan.dur).then(function () {
+    if (plan.tone) toneOff("RX");
+    plan.commit();
+    return rxStep();
   });
 }
 
-document.getElementById("btnRxStart").onclick = function () {
-  if (!validateInputs()) return;
-  var groups = getGroupsFromTable();
-  if (groups.length === 0) return;
+// Запуск/продолжение цепочки шагов. Отказ = «СТОП» во время шага.
+function rxRunChain(runId) {
+  rxStep().then(function () {
+    if (runId === rxRunId) rxFinish();
+  }, function () {
+    if (runId === rxRunId && rxState !== RX_PAUSED) rxPause();
+  });
+}
+// =================== ТРАНСПОРТ ПРИЁМА: ПУСК / СТОП / ПРОДОЛЖИТЬ ===================
+function setRxStatus(text, isPaused) {
+  var el = document.getElementById("rxStatus");
+  if (!el) return;
+  el.innerHTML = text || "";
+  el.className = isPaused ? "rx-status paused" : "rx-status";
+}
 
+// Текущее место передачи для строки статуса
+function rxPositionText(paused) {
+  if (!rxRun) return "";
+  if (rxRun.stage === RX_STAGE_PRE || rxRun.stage === RX_STAGE_PRE_PAUSE) return paused ? "ЗАЧИНА" : "ЗАЧИН";
+  if (rxRun.stage === RX_STAGE_POST || rxRun.stage === RX_STAGE_POST_PAUSE) return paused ? "ОКОНЧАНИЯ" : "ОКОНЧАНИЕ";
+  var idx = rxRun.g * rxRun.repeats + rxRun.r + 1;
+  var total = rxRun.groups.length * rxRun.repeats;
+  return (paused ? "ГРУППЫ " : "ГРУППА ") + idx + "/" + total + " · ЗНАК " + (rxRun.c + 1);
+}
+
+function setRxTransportUI(state) {
+  var startBtn = document.getElementById("btnRxStart");
+  var stopBtn = document.getElementById("btnRxStop");
+  var isPaused = state === RX_PAUSED;
+  stopBtn.className = "action-btn " + (isPaused ? "btn-resume" : "btn-stop");
+  stopBtn.innerHTML = isPaused ? "▶ ПРОДОЛЖИТЬ" : "СТОП";
+  stopBtn.disabled = (state === RX_IDLE);
+  startBtn.innerHTML = isPaused ? "СБРОС" : "ПУСК ПРИЁМА";
+  startBtn.className = "action-btn " + (isPaused ? "btn-reset" : "btn-start");
+  startBtn.disabled = (state === RX_PLAYING);
+}
+
+// Пауза: обрываем текущий шаг, состояние передачи сохраняем, бланок остаётся
+// замороженным, подсветка группы/знака остаётся — видно, где остановились.
+function rxPause() {
+  if (rxState !== RX_PLAYING) return;
+  rxActive = false;
+  rxActiveGeneration++;
+  toneOff("RX");
+  applyAudioParamsNow();
+  rxState = RX_PAUSED;
+  setRxTransportUI(RX_PAUSED);
+  setRxStatus("ПАУЗА · ПРОДОЛЖИТЬ С " + rxPositionText(true) + " · [СБРОС]", true);
+}
+
+function rxResume() {
+  if (rxState !== RX_PAUSED) return;
   initAudio();
   rxActive = true;
   rxActiveGeneration++;
-  setTrainerLocked(true);
+  rxState = RX_PLAYING;
   applyAudioParamsNow();
-
-  document.getElementById("btnRxStart").disabled = true;
-  document.getElementById("btnRxStop").disabled = false;
-  document.getElementById("diffBox").style.display = "none";
-  setUiText("examReport", "");
-  document.getElementById("txtUserInput").value = "";
+  setRxTransportUI(RX_PLAYING);
+  setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
   document.getElementById("txtUserInput").focus();
+  if (rxRun && rxRun.stage === RX_STAGE_GROUP) highlightGroup(rxRun.g);
+  rxRunChain(rxRunId);
+}
+
+function rxFinish() {
+  rxActive = false;
+  rxSessionOn = false;
+  rxRun = null;
+  rxState = RX_IDLE;
+  toneOff("RX");
+  applyAudioParamsNow();
+  clearAllHighlights();
+  setTrainerLocked(false);
+  setRxTransportUI(RX_IDLE);
+  setRxStatus("", false);
+}
+
+// «СБРОС»: остановить приём с паузы и разблокировать панель управления.
+// Журнал оператора и подсветка сохраняются для проверки — полную очистку
+// делает кнопка «Сброс бланка».
+function rxReset() {
+  if (rxState !== RX_PAUSED) return;
+  rxActive = false;
+  rxSessionOn = false;
+  rxRun = null;
+  rxState = RX_IDLE;
+  rxActiveGeneration++;
+  toneOff("RX");
+  applyAudioParamsNow();
+  setTrainerLocked(false);
+  setRxTransportUI(RX_IDLE);
+  setRxStatus("", false);
+}
+
+document.getElementById("btnRxStart").onclick = function () {
+  if (rxState === RX_PLAYING) return;
+  if (rxState === RX_PAUSED) { rxReset(); return; }
+  if (!validateInputs()) return;
+  var groups = getGroupsFromTable();
+  if (groups.length === 0) return;
 
   var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
   // Повтор знака — только акустический: эталон радиограммы остаётся без повторов
@@ -1265,29 +1455,36 @@ document.getElementById("btnRxStart").onclick = function () {
   }
   targetRadiogram = fullList.join(" ");
 
-  function cleanup() {
-    rxActive = false;
-    toneOff("RX");
-    applyAudioParamsNow();
-    clearAllHighlights();
-    setTrainerLocked(false);
-    document.getElementById("btnRxStart").disabled = false;
-    document.getElementById("btnRxStop").disabled = true;
-  }
-  playRadiogramProcess(groups, repeats, charRepeats).then(cleanup, cleanup);
+  rxRunId++;
+  rxRun = {
+    groups: groups, repeats: repeats, charRepeats: charRepeats,
+    pre: getSignalItems("selPreambleMode", PREAMBLE_CODES),
+    post: getSignalItems("selPostambleMode", POSTAMBLE_CODES),
+    stage: RX_STAGE_PRE, ci: 0, si: 0, g: 0, r: 0, c: 0, k: 0, s: 0, el: false
+  };
+
+  initAudio();
+  rxActive = true;
+  rxSessionOn = true;
+  rxActiveGeneration++;
+  rxState = RX_PLAYING;
+  setTrainerLocked(true);
+  applyAudioParamsNow();
+  setRxTransportUI(RX_PLAYING);
+
+  document.getElementById("diffBox").style.display = "none";
+  setUiText("examReport", "");
+  document.getElementById("txtUserInput").value = "";
+  setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
+  document.getElementById("txtUserInput").focus();
+
+  rxRunChain(rxRunId);
 };
 
 document.getElementById("btnRxStop").onclick = function () {
-  rxActive = false;
-  rxActiveGeneration++;
-  toneOff("RX");
-  applyAudioParamsNow();
-  clearAllHighlights();
-  setTrainerLocked(false);
-  document.getElementById("btnRxStart").disabled = false;
-  document.getElementById("btnRxStop").disabled = true;
+  if (rxState === RX_PLAYING) rxPause();
+  else if (rxState === RX_PAUSED) rxResume();
 };
-
 function validateInputs() {
   var errBox = document.getElementById("teacherErrorBox");
   var startBtn = document.getElementById("btnRxStart");
@@ -1356,7 +1553,7 @@ function validateInputs() {
   }
 
   errBox.style.display = "none";
-  if (!rxActive) startBtn.disabled = false;
+  if (!rxSessionOn) startBtn.disabled = false;
   return true;
 }
 
@@ -1468,7 +1665,7 @@ function renderGroupsFromList(groupsList) {
 }
 
 function addNewEmptyGroup() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var currentGroups = getGroupsFromTable();
   if (currentGroups.length >= 100) {
     alert("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100.");
@@ -1483,7 +1680,7 @@ function addNewEmptyGroup() {
 }
 
 function insertMonoGroupFromPanel() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var input = document.getElementById("monoCharInput");
   var countSel = document.getElementById("monoCharCount");
   var ch = cleanMorseChars(input.value);
@@ -1516,7 +1713,7 @@ function insertMonoGroupFromPanel() {
 }
 
 function uiGenerateGroupsTable() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var container = document.getElementById("groupsContainer");
   var numStr = ("" + document.getElementById("numGroups").value).trim();
   if (numStr === "") { container.innerHTML = ""; validateInputs(); return; }
@@ -1585,7 +1782,7 @@ function getGroupsFromTable() {
 }
 
 function setPreset(chars) {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var customField = document.getElementById("customCharset");
   customField.value = chars;
   document.getElementById("accentCharset").value = "";
@@ -1595,7 +1792,7 @@ function setPreset(chars) {
 }
 
 function clearAllTrainer() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var inp = document.getElementById("customCharset");
   inp.value = "";
   document.getElementById("accentCharset").value = "";
@@ -1770,7 +1967,7 @@ function computeDropIndex(cells, x, y) {
 // Перенос группы на позицию targetIndex (0..длина-1). Поправка сдвига
 // при переносе вниз. Возвращает новый индекс ячейки или -1 при отказе.
 function moveGroupToIndex(cell, targetIndex) {
-  if (rxActive) return -1;
+  if (rxSessionOn) return -1;
   if (!cell || isAddGroupCell(cell)) return -1;
   var container = getGroupsContainer();
   if (!container || !cell.parentNode) return -1;
@@ -2030,7 +2227,7 @@ function initGroupsDragAndDrop() {
   if (!container) return;
 
   container.addEventListener("mousedown", function (e) {
-    if (rxActive) return;                                 // во время приёма бланк заблокирован
+    if (rxSessionOn) return;                               // во время приёма (и на паузе) бланок заблокирован
     if (e.button !== 0) return;                           // только ЛКМ
     var cell = findGroupCell(e.target);
     if (!cell || isAddGroupCell(cell)) return;
@@ -2081,7 +2278,7 @@ function initGroupsDragAndDrop() {
 
   // Клавиатурный дубль: CTRL+вправо — ниже по списку, CTRL+влево — выше
   container.addEventListener("keydown", function (e) {
-    if (rxActive) return;
+    if (rxSessionOn) return;
     if (!e.ctrlKey) return;
     var kc = e.keyCode || e.which;
     if (kc !== 37 && kc !== 39) return;
@@ -2512,6 +2709,29 @@ function switchTab(tabId, el) {
   if (tabId === "tab-rx") refreshAllAutoGrows();
 }
 
+// Ограничение частоты применения звука при перетаскивании ползунков:
+// label обновляется на каждый input, а в аудио-параметры пишем не чаще 50 мс
+// с гарантией финального значения (trailing call).
+function throttle(fn, ms) {
+  var last = 0, timer = null, self, args;
+  return function () {
+    self = this; args = arguments;
+    var nowTime = Date.now();
+    var remaining = ms - (nowTime - last);
+    if (remaining <= 0) {
+      last = nowTime;
+      if (timer) { clearTimeout(timer); timer = null; }
+      fn.apply(self, args);
+    } else if (!timer) {
+      timer = setTimeout(function () {
+        last = Date.now(); timer = null;
+        fn.apply(self, args);
+      }, remaining);
+    }
+  };
+}
+var throttleApply = throttle(applyAudioParamsNow, 50);
+
 function sync(rId, lId, unit, scale) {
   scale = scale || 1;
   var r = document.getElementById(rId), l = document.getElementById(lId);
@@ -2519,7 +2739,7 @@ function sync(rId, lId, unit, scale) {
   var handler = function () {
     var val = scale === 1 ? r.value : (r.value / scale).toFixed(1);
     setUiText(l, val + " " + unit);
-    applyAudioParamsNow();
+    throttleApply();
   };
   r.oninput = handler;
   r.onchange = handler;
@@ -2538,7 +2758,7 @@ function updateSpeedControls() {
     setUiText("lblFarnSpeed", charVal + " зн/мин");
   }
   setUiText("lblCharSpeed", charVal + " зн/мин");
-  applyAudioParamsNow();
+  throttleApply();
 }
 
 rngChar.oninput = updateSpeedControls;
@@ -2546,7 +2766,7 @@ rngChar.onchange = updateSpeedControls;
 
 rngFarn.oninput = function () {
   setUiText("lblFarnSpeed", rngFarn.value + " зн/мин");
-  applyAudioParamsNow();
+  throttleApply();
 };
 rngFarn.onchange = rngFarn.oninput;
 
@@ -2562,6 +2782,84 @@ if (rngStudy) {
     setUiText("lblStudySpeed", this.value + " зн/мин");
   };
   rngStudy.onchange = rngStudy.oninput;
+}
+
+// Кастомный выпадающий список «Профиль огибающей» с мини-осциллограммами в пунктах:
+// нативный <select> не умеет рисовать SVG внутри <option> (в т.ч. в старых Gecko).
+function rampSetValue(value, close) {
+  var dd = document.getElementById("selRampShape");
+  if (!dd) return;
+  var li = dd.querySelector('.ramp-options li[data-value="' + value + '"]');
+  if (!li) return;
+  dd.value = value;
+  var curSvg = document.getElementById("rampCurSvg");
+  var curText = document.getElementById("rampCurText");
+  var liSvg = li.querySelector("svg");
+  var liText = li.querySelector("span");
+  if (curSvg && liSvg) curSvg.innerHTML = liSvg.innerHTML;
+  if (curText && liText) curText.textContent = liText.textContent;
+  var items = dd.querySelectorAll(".ramp-options li");
+  for (var i = 0; i < items.length; i++) items[i].className = items[i] === li ? "active" : "";
+  if (close) { dd.classList.remove("open"); dd.classList.remove("up"); }
+}
+
+function rampDropdownToggle(ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  var dd = document.getElementById("selRampShape");
+  if (!dd) return;
+  if (dd.classList.contains("open")) dd.classList.remove("open");
+  else rampDropdownOpen(dd);
+}
+
+function rampDropdownOpen(dd) {
+  dd.classList.add("open");
+  dd.classList.remove("up");
+  var list = dd.querySelector(".ramp-options");
+  if (!list || !dd.getBoundingClientRect || !getComputedStyle) return;
+  var r = dd.getBoundingClientRect();
+  var h = list.offsetHeight || list.scrollHeight || 0;
+  var clipTop = 0, clipBottom = Infinity, el = dd.parentNode;
+  while (el && el.nodeType === 1 && el !== document.body) {
+    var ov = getComputedStyle(el).overflowY || "visible";
+    if (ov === "hidden" || ov === "auto" || ov === "scroll") {
+      var er = el.getBoundingClientRect();
+      var eb = er.top + (el.clientHeight || er.bottom - er.top);
+      if (eb < clipBottom) clipBottom = eb;
+      if (er.top > clipTop) clipTop = er.top;
+    }
+    el = el.parentNode;
+  }
+  var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  if (clipBottom > vh) clipBottom = vh;
+  if (clipTop < 0) clipTop = 0;
+  var down = clipBottom - r.bottom - 6;
+  var up = r.top - clipTop - 6;
+  if (down >= h) dd.classList.remove("up");
+  else dd.classList.add("up");
+}
+
+function rampDropdownSelect(li, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  rampSetValue(li.getAttribute("data-value"), true);
+  applyAudioParamsNow();
+}
+
+function initRampDropdown() {
+  var dd = document.getElementById("selRampShape");
+  if (!dd) return;
+  rampSetValue("rc", false);
+  document.addEventListener("click", function (ev) {
+    var el = ev.target, ddEl = document.getElementById("selRampShape");
+    if (!ddEl) return;
+    while (el) { if (el === ddEl) return; el = el.parentNode; }
+    ddEl.classList.remove("open");
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" || ev.keyCode === 27) {
+      var ddEl = document.getElementById("selRampShape");
+      if (ddEl) ddEl.classList.remove("open");
+    }
+  });
 }
 
 sync("rngIambicSpeed", "lblIambicSpeed", "зн/мин");
@@ -2588,6 +2886,7 @@ renderStudyTable();
 uiGenerateGroupsTable();
 initGroupsDragAndDrop();
 refreshAllAutoGrows();
+initRampDropdown();
 requestAnimationFrame(renderUndulator);
 
 </script>

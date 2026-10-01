@@ -78,7 +78,7 @@ function computeDropIndex(cells, x, y) {
 // Перенос группы на позицию targetIndex (0..длина-1). Поправка сдвига
 // при переносе вниз. Возвращает новый индекс ячейки или -1 при отказе.
 function moveGroupToIndex(cell, targetIndex) {
-  if (rxActive) return -1;
+  if (rxSessionOn) return -1;
   if (!cell || isAddGroupCell(cell)) return -1;
   var container = getGroupsContainer();
   if (!container || !cell.parentNode) return -1;
@@ -338,7 +338,7 @@ function initGroupsDragAndDrop() {
   if (!container) return;
 
   container.addEventListener("mousedown", function (e) {
-    if (rxActive) return;                                 // во время приёма бланк заблокирован
+    if (rxSessionOn) return;                               // во время приёма (и на паузе) бланок заблокирован
     if (e.button !== 0) return;                           // только ЛКМ
     var cell = findGroupCell(e.target);
     if (!cell || isAddGroupCell(cell)) return;
@@ -389,7 +389,7 @@ function initGroupsDragAndDrop() {
 
   // Клавиатурный дубль: CTRL+вправо — ниже по списку, CTRL+влево — выше
   container.addEventListener("keydown", function (e) {
-    if (rxActive) return;
+    if (rxSessionOn) return;
     if (!e.ctrlKey) return;
     var kc = e.keyCode || e.which;
     if (kc !== 37 && kc !== 39) return;

@@ -94,6 +94,15 @@ function clearAllHighlights() {
 
 var rxActiveGeneration = 0, targetRadiogram = "";
 
+// ТРАНСПОРТ ПРИЁМА: состояние кнопок и возобновляемая передача радиограммы.
+// rxRun переживает нажатие «СТОП», поэтому «ПРОДОЛЖИТЬ» продолжает ровно с места
+// обрыва; rxRunId защищает от «хвостов» предыдущей цепочки промисов.
+var RX_IDLE = 0, RX_PLAYING = 1, RX_PAUSED = 2;
+var rxState = RX_IDLE, rxRunId = 0, rxRun = null;
+var RX_STAGE_PRE = 0, RX_STAGE_PRE_PAUSE = 1, RX_STAGE_GROUP = 2,
+    RX_STAGE_POST = 3, RX_STAGE_POST_PAUSE = 4, RX_STAGE_DONE = 5;
+var RX_TECH_PAUSE_MS = 1200;   // технологическая пауза после зачина и после окончания
+
 function sleepRx(ms) {
   var gen = rxActiveGeneration;
   return workerSleep(ms).then(function () {
@@ -151,130 +160,241 @@ function getSignalItems(selId, codesByMode) {
   return codes || [];
 }
 
-function playSignalChain(codes) {
-  var cIdx = 0;
+// ПЕРЕДАЧА РАДИОГРАММЫ, ПРИОСТАНАВЛИВАЕМАЯ С МЕСТА ОБРЫВА
+// Шаг передачи = один тон или одна пауза. rxNextAction() только ВЫБИРАЕТ шаг,
+// не двигая позицию; позиция применяется функцией commit() лишь после того, как
+// сон шага действительно завершился. Поэтому при СТОП посреди тона или паузы
+// состояние остаётся на этом шаге, и «ПРОДОЛЖИТЬ» проигрывает его заново целиком.
+function rxNextAction() {
+  var st = rxRun, t = getLiveAtomTimings();
 
-  function nextCode() {
-    if (cIdx >= codes.length || !rxActive) return Promise.resolve();
-    var code = codes[cIdx++];
-    var s = 0;
-
-    function nextSym() {
-      if (s >= code.length || !rxActive) {
-        var t = getLiveAtomTimings();
-        return sleepRx(t.charPauseMs);
-      }
-      var t = getLiveAtomTimings();
-      toneOn("RX");
-      return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-        toneOff("RX");
-        return sleepRx(t.elemPauseMs);
-      }).then(function () {
-        s++;
-        return nextSym();
-      });
+  // --- служебные сигналы: зачин (0) и окончание (3) ---
+  if (st.stage === RX_STAGE_PRE || st.stage === RX_STAGE_POST) {
+    var codes = st.stage === RX_STAGE_PRE ? st.pre : st.post;
+    if (st.ci >= codes.length) { st.stage++; return rxNextAction(); }
+    var code = codes[st.ci];
+    // межэлементная пауза внутри знака (после каждой точки/тире)
+    if (st.el) {
+      return { tone: false, dur: t.elemPauseMs, commit: function () { st.el = false; } };
     }
-
-    return nextSym().then(nextCode);
+    if (st.si < code.length) {
+      var si = st.si + 1;
+      var sigDur = code[st.si] === "." ? t.dotMs : t.dashMs;
+      return {
+        tone: true, dur: sigDur,
+        commit: function () { st.si = si; st.el = true; }
+      };
+    }
+    // конец служебного знака — межзнаковая пауза
+    var ci = st.ci + 1;
+    return {
+      tone: false, dur: t.charPauseMs,
+      commit: function () { st.ci = ci; st.si = 0; }
+    };
   }
 
-  return nextCode();
-}
-
-// Блок служебных сигналов (зачин/концовка) с последующей технологической паузой
-function playSignalBlock(codes) {
-  if (!codes || codes.length === 0 || !rxActive) return Promise.resolve();
-  return playSignalChain(codes).then(function () {
-    return sleepRx(1200);
-  });
-}
-
-function playRadiogramProcess(groups, repeats, charRepeats) {
-  charRepeats = charRepeats || 1;
-  var preambleCodes = getSignalItems("selPreambleMode", PREAMBLE_CODES);
-  var postambleCodes = getSignalItems("selPostambleMode", POSTAMBLE_CODES);
-
-  return playSignalBlock(preambleCodes).then(function () {
-    var g = 0;
-    function nextGroup() {
-      if (g >= groups.length || !rxActive) return Promise.resolve();
-      var grp = groups[g], r = 0;
-      function nextRepeat() {
-        if (r >= repeats || !rxActive) { g++; return nextGroup(); }
-        highlightGroup(g);
-        var cell = document.getElementById("grp-cell-" + g);
-        if (cell) {
-          var slots = cell.querySelectorAll(".char-slot");
-          for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
-        }
-        var c = 0;
-        function nextChar() {
-          if (c >= grp.length || !rxActive) {
-            var t = getLiveAtomTimings();
-            return sleepRx(t.groupPauseMs).then(function () { r++; return nextRepeat(); });
-          }
-          var code = MORSE_MAP[grp[c]];
-          if (!code) {
-            // Неизвестный знак: одна межзнаковая пауза, повторения не применяются
-            var t0 = getLiveAtomTimings();
-            return sleepRx(t0.charPauseMs).then(function () { c++; return nextChar(); });
-          }
-          highlightChar(g, c);
-          var k = 0;
-          // ПОВТОРЕНИЕ ЗНАКА: один и тот же знак charRepeats раз подряд,
-          // раздельно межзнаковой паузой (слитный приём удвоенных знаков)
-          function nextCharRepeat() {
-            if (k >= charRepeats || !rxActive) {
-              releaseCharHighlight(g, c);
-              c++;
-              return nextChar();
-            }
-            k++;
-            var s = 0;
-            function nextSymbol() {
-              if (s >= code.length || !rxActive) {
-                var t = getLiveAtomTimings();
-                return sleepRx(t.charPauseMs).then(function () { return nextCharRepeat(); });
-              }
-              var t = getLiveAtomTimings();
-              toneOn("RX");
-              return sleepRx(code[s] === "." ? t.dotMs : t.dashMs).then(function () {
-                toneOff("RX");
-                return sleepRx(t.elemPauseMs);
-              }).then(function () { s++; return nextSymbol(); });
-            }
-            return nextSymbol();
-          }
-          return nextCharRepeat();
-        }
-        return nextChar();
-      }
-      return nextRepeat();
+  // --- технологическая пауза после зачина и после окончания ---
+  if (st.stage === RX_STAGE_PRE_PAUSE || st.stage === RX_STAGE_POST_PAUSE) {
+    var nextStage = st.stage + 1;
+    // без зачина/окончания паузы нет — как и в прежней реализации
+    if (st.stage === RX_STAGE_PRE_PAUSE ? st.pre.length === 0 : st.post.length === 0) {
+      st.stage = nextStage;
+      return rxNextAction();
     }
-    return nextGroup();
-  }).then(function () {
-    // Окончание (концовка) после передачи радиограммы + технологическая пауза
-    return playSignalBlock(postambleCodes);
+    return {
+      tone: false, dur: RX_TECH_PAUSE_MS,
+      commit: function () { st.stage = nextStage; }
+    };
+  }
+
+  if (st.stage >= RX_STAGE_DONE) return null;
+
+  // --- группы радиограммы ---
+  if (st.g >= st.groups.length) {
+    // переход к окончанию: счётчики служебных кодов стартуют заново
+    st.stage = RX_STAGE_POST;
+    st.ci = 0; st.si = 0; st.el = false;
+    return rxNextAction();
+  }
+
+  var grp = st.groups[st.g];
+  if (st.c === 0 && st.k === 0 && st.s === 0) {
+    // вход в группу (или в её повтор). Идемпотентно: повтор при ПРОДОЛЖИТЬ не мешает
+    highlightGroup(st.g);
+    var cell = document.getElementById("grp-cell-" + st.g);
+    if (cell) {
+      var slots = cell.querySelectorAll(".char-slot");
+      for (var i = 0; i < slots.length; i++) slots[i].className = "char-slot";
+    }
+    setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
+  }
+
+  if (st.c >= grp.length) {
+    // группа отработана: пауза между группами, затем следующий повтор или группа
+    var r = st.r + 1;
+    var isLast = r >= st.repeats;
+    return {
+      tone: false, dur: t.groupPauseMs,
+      commit: function () {
+        st.r = isLast ? 0 : r;
+        if (isLast) st.g++;
+        st.c = 0; st.k = 0; st.s = 0; st.el = false;
+      }
+    };
+  }
+
+  var charCode = MORSE_MAP[grp[st.c]];
+  if (!charCode) {
+    // Неизвестный знак: одна межзнаковая пауза, повторения не применяются
+    var c0 = st.c + 1;
+    return {
+      tone: false, dur: t.charPauseMs,
+      commit: function () { st.c = c0; st.k = 0; st.s = 0; st.el = false; }
+    };
+  }
+
+  // межэлементная пауза внутри знака (после каждой точки/тире)
+  if (st.el) {
+    return { tone: false, dur: t.elemPauseMs, commit: function () { st.el = false; } };
+  }
+
+  if (st.k >= st.charRepeats) {
+    // повторы знака исчерпаны — переход к следующему знаку группы
+    releaseCharHighlight(st.g, st.c);
+    var c1 = st.c + 1;
+    st.c = c1; st.k = 0; st.s = 0; st.el = false;
+    return rxNextAction();
+  }
+
+  if (st.s < charCode.length) {
+    if (st.k === 0) highlightChar(st.g, st.c);
+    var s0 = st.s + 1;
+    var charDur = charCode[st.s] === "." ? t.dotMs : t.dashMs;
+    return {
+      tone: true, dur: charDur,
+      commit: function () { st.s = s0; st.el = true; }
+    };
+  }
+
+  // конец знака (или его повтора) — межзнаковая пауза и счётчик повторов
+  return {
+    tone: false, dur: t.charPauseMs,
+    commit: function () { st.s = 0; st.k++; st.el = false; }
+  };
+}
+
+function rxStep() {
+  var plan = rxNextAction();
+  if (!plan) return Promise.resolve();
+  if (plan.tone) toneOn("RX");
+  return sleepRx(plan.dur).then(function () {
+    if (plan.tone) toneOff("RX");
+    plan.commit();
+    return rxStep();
   });
 }
 
-document.getElementById("btnRxStart").onclick = function () {
-  if (!validateInputs()) return;
-  var groups = getGroupsFromTable();
-  if (groups.length === 0) return;
+// Запуск/продолжение цепочки шагов. Отказ = «СТОП» во время шага.
+function rxRunChain(runId) {
+  rxStep().then(function () {
+    if (runId === rxRunId) rxFinish();
+  }, function () {
+    if (runId === rxRunId && rxState !== RX_PAUSED) rxPause();
+  });
+}
+// =================== ТРАНСПОРТ ПРИЁМА: ПУСК / СТОП / ПРОДОЛЖИТЬ ===================
+function setRxStatus(text, isPaused) {
+  var el = document.getElementById("rxStatus");
+  if (!el) return;
+  el.innerHTML = text || "";
+  el.className = isPaused ? "rx-status paused" : "rx-status";
+}
 
+// Текущее место передачи для строки статуса
+function rxPositionText(paused) {
+  if (!rxRun) return "";
+  if (rxRun.stage === RX_STAGE_PRE || rxRun.stage === RX_STAGE_PRE_PAUSE) return paused ? "ЗАЧИНА" : "ЗАЧИН";
+  if (rxRun.stage === RX_STAGE_POST || rxRun.stage === RX_STAGE_POST_PAUSE) return paused ? "ОКОНЧАНИЯ" : "ОКОНЧАНИЕ";
+  var idx = rxRun.g * rxRun.repeats + rxRun.r + 1;
+  var total = rxRun.groups.length * rxRun.repeats;
+  return (paused ? "ГРУППЫ " : "ГРУППА ") + idx + "/" + total + " · ЗНАК " + (rxRun.c + 1);
+}
+
+function setRxTransportUI(state) {
+  var startBtn = document.getElementById("btnRxStart");
+  var stopBtn = document.getElementById("btnRxStop");
+  var isPaused = state === RX_PAUSED;
+  stopBtn.className = "action-btn " + (isPaused ? "btn-resume" : "btn-stop");
+  stopBtn.innerHTML = isPaused ? "▶ ПРОДОЛЖИТЬ" : "СТОП";
+  stopBtn.disabled = (state === RX_IDLE);
+  startBtn.innerHTML = isPaused ? "СБРОС" : "ПУСК ПРИЁМА";
+  startBtn.className = "action-btn " + (isPaused ? "btn-reset" : "btn-start");
+  startBtn.disabled = (state === RX_PLAYING);
+}
+
+// Пауза: обрываем текущий шаг, состояние передачи сохраняем, бланок остаётся
+// замороженным, подсветка группы/знака остаётся — видно, где остановились.
+function rxPause() {
+  if (rxState !== RX_PLAYING) return;
+  rxActive = false;
+  rxActiveGeneration++;
+  toneOff("RX");
+  applyAudioParamsNow();
+  rxState = RX_PAUSED;
+  setRxTransportUI(RX_PAUSED);
+  setRxStatus("ПАУЗА · ПРОДОЛЖИТЬ С " + rxPositionText(true) + " · [СБРОС]", true);
+}
+
+function rxResume() {
+  if (rxState !== RX_PAUSED) return;
   initAudio();
   rxActive = true;
   rxActiveGeneration++;
-  setTrainerLocked(true);
+  rxState = RX_PLAYING;
   applyAudioParamsNow();
-
-  document.getElementById("btnRxStart").disabled = true;
-  document.getElementById("btnRxStop").disabled = false;
-  document.getElementById("diffBox").style.display = "none";
-  setUiText("examReport", "");
-  document.getElementById("txtUserInput").value = "";
+  setRxTransportUI(RX_PLAYING);
+  setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
   document.getElementById("txtUserInput").focus();
+  if (rxRun && rxRun.stage === RX_STAGE_GROUP) highlightGroup(rxRun.g);
+  rxRunChain(rxRunId);
+}
+
+function rxFinish() {
+  rxActive = false;
+  rxSessionOn = false;
+  rxRun = null;
+  rxState = RX_IDLE;
+  toneOff("RX");
+  applyAudioParamsNow();
+  clearAllHighlights();
+  setTrainerLocked(false);
+  setRxTransportUI(RX_IDLE);
+  setRxStatus("", false);
+}
+
+// «СБРОС»: остановить приём с паузы и разблокировать панель управления.
+// Журнал оператора и подсветка сохраняются для проверки — полную очистку
+// делает кнопка «Сброс бланка».
+function rxReset() {
+  if (rxState !== RX_PAUSED) return;
+  rxActive = false;
+  rxSessionOn = false;
+  rxRun = null;
+  rxState = RX_IDLE;
+  rxActiveGeneration++;
+  toneOff("RX");
+  applyAudioParamsNow();
+  setTrainerLocked(false);
+  setRxTransportUI(RX_IDLE);
+  setRxStatus("", false);
+}
+
+document.getElementById("btnRxStart").onclick = function () {
+  if (rxState === RX_PLAYING) return;
+  if (rxState === RX_PAUSED) { rxReset(); return; }
+  if (!validateInputs()) return;
+  var groups = getGroupsFromTable();
+  if (groups.length === 0) return;
 
   var repeats = parseInt(document.getElementById("groupRepeat").value, 10) || 1;
   // Повтор знака — только акустический: эталон радиограммы остаётся без повторов
@@ -285,29 +405,36 @@ document.getElementById("btnRxStart").onclick = function () {
   }
   targetRadiogram = fullList.join(" ");
 
-  function cleanup() {
-    rxActive = false;
-    toneOff("RX");
-    applyAudioParamsNow();
-    clearAllHighlights();
-    setTrainerLocked(false);
-    document.getElementById("btnRxStart").disabled = false;
-    document.getElementById("btnRxStop").disabled = true;
-  }
-  playRadiogramProcess(groups, repeats, charRepeats).then(cleanup, cleanup);
+  rxRunId++;
+  rxRun = {
+    groups: groups, repeats: repeats, charRepeats: charRepeats,
+    pre: getSignalItems("selPreambleMode", PREAMBLE_CODES),
+    post: getSignalItems("selPostambleMode", POSTAMBLE_CODES),
+    stage: RX_STAGE_PRE, ci: 0, si: 0, g: 0, r: 0, c: 0, k: 0, s: 0, el: false
+  };
+
+  initAudio();
+  rxActive = true;
+  rxSessionOn = true;
+  rxActiveGeneration++;
+  rxState = RX_PLAYING;
+  setTrainerLocked(true);
+  applyAudioParamsNow();
+  setRxTransportUI(RX_PLAYING);
+
+  document.getElementById("diffBox").style.display = "none";
+  setUiText("examReport", "");
+  document.getElementById("txtUserInput").value = "";
+  setRxStatus("ИДЁТ ПРИЁМ: " + rxPositionText(false), false);
+  document.getElementById("txtUserInput").focus();
+
+  rxRunChain(rxRunId);
 };
 
 document.getElementById("btnRxStop").onclick = function () {
-  rxActive = false;
-  rxActiveGeneration++;
-  toneOff("RX");
-  applyAudioParamsNow();
-  clearAllHighlights();
-  setTrainerLocked(false);
-  document.getElementById("btnRxStart").disabled = false;
-  document.getElementById("btnRxStop").disabled = true;
+  if (rxState === RX_PLAYING) rxPause();
+  else if (rxState === RX_PAUSED) rxResume();
 };
-
 function validateInputs() {
   var errBox = document.getElementById("teacherErrorBox");
   var startBtn = document.getElementById("btnRxStart");
@@ -376,7 +503,7 @@ function validateInputs() {
   }
 
   errBox.style.display = "none";
-  if (!rxActive) startBtn.disabled = false;
+  if (!rxSessionOn) startBtn.disabled = false;
   return true;
 }
 
@@ -488,7 +615,7 @@ function renderGroupsFromList(groupsList) {
 }
 
 function addNewEmptyGroup() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var currentGroups = getGroupsFromTable();
   if (currentGroups.length >= 100) {
     alert("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100.");
@@ -503,7 +630,7 @@ function addNewEmptyGroup() {
 }
 
 function insertMonoGroupFromPanel() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var input = document.getElementById("monoCharInput");
   var countSel = document.getElementById("monoCharCount");
   var ch = cleanMorseChars(input.value);
@@ -536,7 +663,7 @@ function insertMonoGroupFromPanel() {
 }
 
 function uiGenerateGroupsTable() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var container = document.getElementById("groupsContainer");
   var numStr = ("" + document.getElementById("numGroups").value).trim();
   if (numStr === "") { container.innerHTML = ""; validateInputs(); return; }
@@ -605,7 +732,7 @@ function getGroupsFromTable() {
 }
 
 function setPreset(chars) {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var customField = document.getElementById("customCharset");
   customField.value = chars;
   document.getElementById("accentCharset").value = "";
@@ -615,7 +742,7 @@ function setPreset(chars) {
 }
 
 function clearAllTrainer() {
-  if (rxActive) return;
+  if (rxSessionOn) return;
   var inp = document.getElementById("customCharset");
   inp.value = "";
   document.getElementById("accentCharset").value = "";

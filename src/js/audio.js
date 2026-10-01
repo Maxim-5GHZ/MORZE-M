@@ -8,6 +8,16 @@
 var audioCtx = null, mainToneOsc = null, keyingGain = null, qsbGain = null, qsbLfo = null, qsbDepthGain = null, masterToneGain = null;
 var noiseNode = null, noiseGain = null, qrmOsc = null, qrmGain = null;
 var noiseEnabled = false, rxActive = false, isTestToneOn = false;
+// Текущее значение громкости ключа (JS-зеркало AudioParam: в старых Gecko
+// param.value не отражает значение во время автоматизации).
+var keyGainValue = 0;
+// Кэш последних применённых параметров: одинаковые значения повторно не
+// планируются, иначе в старых браузерах копились события на одном батче.
+var lastAudioParams = { freq: -1, vol: -1, noiseVol: -1, qrmVol: -1, qsbDepth: -1, qsbPeriod: -1 };
+// Сессия приёма жива: передача идёт ИЛИ стоит на паузе (кнопка «ПРОДОЛЖИТЬ»).
+// rxActive означает только «шаг передачи выполняется», поэтому блокировку бланка
+// и шум эфира надо вести по rxSessionOn, иначе пауза всё разморозит.
+var rxSessionOn = false;
 
 function initAudio() {
   if (audioCtx) {
@@ -97,31 +107,51 @@ function initAudio() {
   }
 }
 
+function smoothParam(param, value, tau) {
+  var now = audioCtx.currentTime;
+  try { param.cancelScheduledValues(now); } catch (e) {}
+  param.setTargetAtTime(value, now, tau);
+}
+
 function applyAudioParamsNow() {
-  if (!audioCtx) return;
+  if (!audioCtx || audioCtx.state === "closed") return;
   try {
-    var now = audioCtx.currentTime;
     var freq = parseFloat(document.getElementById("rngToneFreq").value) || 700;
     var vol = ((parseFloat(document.getElementById("rngToneVol").value) || 70) / 100) * 0.4;
-    mainToneOsc.frequency.setValueAtTime(freq, now);
-    masterToneGain.gain.setValueAtTime(vol, now);
+    if (freq !== lastAudioParams.freq) {
+      lastAudioParams.freq = freq;
+      smoothParam(mainToneOsc.frequency, freq, 0.006);
+    }
+    if (vol !== lastAudioParams.vol) {
+      lastAudioParams.vol = vol;
+      smoothParam(masterToneGain.gain, vol, 0.01);
+    }
 
-    var isNoiseAudible = (noiseEnabled && rxActive) || isTestToneOn;
+    var isNoiseAudible = (noiseEnabled && rxSessionOn) || isTestToneOn;
     var nVol = isNoiseAudible ? parseFloat(document.getElementById("rngNoiseVol").value) / 250 : 0;
-    noiseGain.gain.setTargetAtTime(nVol, now, 0.02);
+    if (nVol !== lastAudioParams.noiseVol) {
+      lastAudioParams.noiseVol = nVol;
+      smoothParam(noiseGain.gain, nVol, 0.02);
+    }
 
     var qVol = isNoiseAudible ? parseFloat(document.getElementById("rngQrmVol").value) / 350 : 0;
-    qrmGain.gain.setTargetAtTime(qVol, now, 0.02);
+    if (qVol !== lastAudioParams.qrmVol) {
+      lastAudioParams.qrmVol = qVol;
+      smoothParam(qrmGain.gain, qVol, 0.02);
+    }
 
     var qsbActive = noiseEnabled || isTestToneOn;
     var qsbDepth = qsbActive ? parseFloat(document.getElementById("rngQsbDepth").value) / 100 : 0;
     var qsbPeriod = Math.max(1.0, parseFloat(document.getElementById("rngQsbPeriod").value) / 10);
-    qsbLfo.frequency.setValueAtTime(1 / qsbPeriod, now);
-
-    var midGain = 1.0 - qsbDepth * 0.48;
-    var lfoAmp = qsbDepth * 0.48;
-    qsbGain.gain.setTargetAtTime(midGain, now, 0.02);
-    qsbDepthGain.gain.setTargetAtTime(lfoAmp, now, 0.02);
+    if (qsbPeriod !== lastAudioParams.qsbPeriod) {
+      lastAudioParams.qsbPeriod = qsbPeriod;
+      smoothParam(qsbLfo.frequency, 1 / qsbPeriod, 0.02);
+    }
+    if (qsbDepth !== lastAudioParams.qsbDepth) {
+      lastAudioParams.qsbDepth = qsbDepth;
+      smoothParam(qsbGain.gain, 1.0 - qsbDepth * 0.48, 0.02);
+      smoothParam(qsbDepthGain.gain, qsbDepth * 0.48, 0.02);
+    }
   } catch (e) {}
 }
 
@@ -137,11 +167,12 @@ function toneOn(source) {
     var shape = document.getElementById("selRampShape").value;
     keyingGain.gain.cancelScheduledValues(now);
     if (shape === "linear") {
-      keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
+      keyingGain.gain.setValueAtTime(keyGainValue, now);
       keyingGain.gain.linearRampToValueAtTime(1.0, now + rampSec);
     } else {
       keyingGain.gain.setTargetAtTime(1.0, now, rampSec / 2.5);
     }
+    keyGainValue = 1.0;
   } catch (e) {}
 }
 
@@ -157,11 +188,12 @@ function toneOff(source) {
     var shape = document.getElementById("selRampShape").value;
     keyingGain.gain.cancelScheduledValues(now);
     if (shape === "linear") {
-      keyingGain.gain.setValueAtTime(keyingGain.gain.value, now);
+      keyingGain.gain.setValueAtTime(keyGainValue, now);
       keyingGain.gain.linearRampToValueAtTime(0.0001, now + rampSec);
     } else {
       keyingGain.gain.setTargetAtTime(0.0001, now, rampSec / 2.5);
     }
+    keyGainValue = 0.0001;
   } catch (e) {}
 }
 

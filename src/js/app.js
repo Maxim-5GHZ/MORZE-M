@@ -69,6 +69,29 @@ function switchTab(tabId, el) {
   if (tabId === "tab-rx") refreshAllAutoGrows();
 }
 
+// Ограничение частоты применения звука при перетаскивании ползунков:
+// label обновляется на каждый input, а в аудио-параметры пишем не чаще 50 мс
+// с гарантией финального значения (trailing call).
+function throttle(fn, ms) {
+  var last = 0, timer = null, self, args;
+  return function () {
+    self = this; args = arguments;
+    var nowTime = Date.now();
+    var remaining = ms - (nowTime - last);
+    if (remaining <= 0) {
+      last = nowTime;
+      if (timer) { clearTimeout(timer); timer = null; }
+      fn.apply(self, args);
+    } else if (!timer) {
+      timer = setTimeout(function () {
+        last = Date.now(); timer = null;
+        fn.apply(self, args);
+      }, remaining);
+    }
+  };
+}
+var throttleApply = throttle(applyAudioParamsNow, 50);
+
 function sync(rId, lId, unit, scale) {
   scale = scale || 1;
   var r = document.getElementById(rId), l = document.getElementById(lId);
@@ -76,7 +99,7 @@ function sync(rId, lId, unit, scale) {
   var handler = function () {
     var val = scale === 1 ? r.value : (r.value / scale).toFixed(1);
     setUiText(l, val + " " + unit);
-    applyAudioParamsNow();
+    throttleApply();
   };
   r.oninput = handler;
   r.onchange = handler;
@@ -95,7 +118,7 @@ function updateSpeedControls() {
     setUiText("lblFarnSpeed", charVal + " зн/мин");
   }
   setUiText("lblCharSpeed", charVal + " зн/мин");
-  applyAudioParamsNow();
+  throttleApply();
 }
 
 rngChar.oninput = updateSpeedControls;
@@ -103,7 +126,7 @@ rngChar.onchange = updateSpeedControls;
 
 rngFarn.oninput = function () {
   setUiText("lblFarnSpeed", rngFarn.value + " зн/мин");
-  applyAudioParamsNow();
+  throttleApply();
 };
 rngFarn.onchange = rngFarn.oninput;
 
@@ -119,6 +142,84 @@ if (rngStudy) {
     setUiText("lblStudySpeed", this.value + " зн/мин");
   };
   rngStudy.onchange = rngStudy.oninput;
+}
+
+// Кастомный выпадающий список «Профиль огибающей» с мини-осциллограммами в пунктах:
+// нативный <select> не умеет рисовать SVG внутри <option> (в т.ч. в старых Gecko).
+function rampSetValue(value, close) {
+  var dd = document.getElementById("selRampShape");
+  if (!dd) return;
+  var li = dd.querySelector('.ramp-options li[data-value="' + value + '"]');
+  if (!li) return;
+  dd.value = value;
+  var curSvg = document.getElementById("rampCurSvg");
+  var curText = document.getElementById("rampCurText");
+  var liSvg = li.querySelector("svg");
+  var liText = li.querySelector("span");
+  if (curSvg && liSvg) curSvg.innerHTML = liSvg.innerHTML;
+  if (curText && liText) curText.textContent = liText.textContent;
+  var items = dd.querySelectorAll(".ramp-options li");
+  for (var i = 0; i < items.length; i++) items[i].className = items[i] === li ? "active" : "";
+  if (close) { dd.classList.remove("open"); dd.classList.remove("up"); }
+}
+
+function rampDropdownToggle(ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  var dd = document.getElementById("selRampShape");
+  if (!dd) return;
+  if (dd.classList.contains("open")) dd.classList.remove("open");
+  else rampDropdownOpen(dd);
+}
+
+function rampDropdownOpen(dd) {
+  dd.classList.add("open");
+  dd.classList.remove("up");
+  var list = dd.querySelector(".ramp-options");
+  if (!list || !dd.getBoundingClientRect || !getComputedStyle) return;
+  var r = dd.getBoundingClientRect();
+  var h = list.offsetHeight || list.scrollHeight || 0;
+  var clipTop = 0, clipBottom = Infinity, el = dd.parentNode;
+  while (el && el.nodeType === 1 && el !== document.body) {
+    var ov = getComputedStyle(el).overflowY || "visible";
+    if (ov === "hidden" || ov === "auto" || ov === "scroll") {
+      var er = el.getBoundingClientRect();
+      var eb = er.top + (el.clientHeight || er.bottom - er.top);
+      if (eb < clipBottom) clipBottom = eb;
+      if (er.top > clipTop) clipTop = er.top;
+    }
+    el = el.parentNode;
+  }
+  var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  if (clipBottom > vh) clipBottom = vh;
+  if (clipTop < 0) clipTop = 0;
+  var down = clipBottom - r.bottom - 6;
+  var up = r.top - clipTop - 6;
+  if (down >= h) dd.classList.remove("up");
+  else dd.classList.add("up");
+}
+
+function rampDropdownSelect(li, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  rampSetValue(li.getAttribute("data-value"), true);
+  applyAudioParamsNow();
+}
+
+function initRampDropdown() {
+  var dd = document.getElementById("selRampShape");
+  if (!dd) return;
+  rampSetValue("rc", false);
+  document.addEventListener("click", function (ev) {
+    var el = ev.target, ddEl = document.getElementById("selRampShape");
+    if (!ddEl) return;
+    while (el) { if (el === ddEl) return; el = el.parentNode; }
+    ddEl.classList.remove("open");
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" || ev.keyCode === 27) {
+      var ddEl = document.getElementById("selRampShape");
+      if (ddEl) ddEl.classList.remove("open");
+    }
+  });
 }
 
 sync("rngIambicSpeed", "lblIambicSpeed", "зн/мин");
@@ -145,4 +246,5 @@ renderStudyTable();
 uiGenerateGroupsTable();
 initGroupsDragAndDrop();
 refreshAllAutoGrows();
+initRampDropdown();
 requestAnimationFrame(renderUndulator);
