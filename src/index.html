@@ -50,28 +50,28 @@
     <div class="panel panel-teacher">
       <h3>Блок формирования учебных радиограмм</h3>
       <div class="presets-row" id="presetsBlock">
-        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')">★ Полный алфавит</span>
-        <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')">Базовые буквы</span>
-        <span class="preset-badge" onclick="setPreset('Ø 1 2 3 4 5 6 7 8 9')">Цифровой блок</span>
-        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 1 2 3 4 5 6 7 8 9')">Буквы и цифры</span>
-        <span class="preset-badge" onclick="setPreset('= / ? , .')">Спецзнаки и препинание</span>
-        <span class="preset-badge clear-btn" onclick="clearAllTrainer()">✖ Сброс бланка</span>
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')" title="Набор: полный алфавит">★ Полный алфавит</span>
+        <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')" title="Набор: базовые буквы">Базовые буквы</span>
+        <span class="preset-badge" onclick="setPreset('Ø 1 2 3 4 5 6 7 8 9')" title="Набор: цифровой блок">Цифровой блок</span>
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 1 2 3 4 5 6 7 8 9')" title="Набор: буквы и цифры">Буквы и цифры</span>
+        <span class="preset-badge" onclick="setPreset('= / ? , .')" title="Набор: спецзнаки и препинание">Спецзнаки и препинание</span>
+        <span class="preset-badge clear-btn" onclick="clearAllTrainer()" title="Очистить набор знаков, группы и журнал (с подтверждением)">✖ Сброс бланка</span>
       </div>
       <div class="inputs-2col">
         <div class="form-group">
           <label>Набор знаков (через пробел; короткий ноль: [0]+[-]):</label>
-          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this); uiGenerateGroupsTable();">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
+          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this)" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
         </div>
         <div class="form-group">
           <label>Знаки приоритетной отработки:</label>
-          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this); uiGenerateGroupsTable();"></textarea>
+          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this)" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}"></textarea>
         </div>
       </div>
       <div class="error-banner" id="teacherErrorBox"></div>
       <div class="controls-row-6">
         <div class="form-group">
           <label>Размер группы:</label>
-          <select id="groupLength" onchange="uiGenerateGroupsTable()">
+          <select id="groupLength" onchange="requestRegenerate()">
             <option value="2">2 знака</option>
             <option value="3">3 знак</option>
             <option value="4">4 знака</option>
@@ -80,7 +80,7 @@
         </div>
         <div class="form-group">
           <label>Число групп (0..100):</label>
-          <input type="number" id="numGroups" min="0" max="100" value="12" oninput="uiGenerateGroupsTable()" onchange="uiGenerateGroupsTable()"/>
+          <input type="number" id="numGroups" min="0" max="100" value="12" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){this.blur();}"/>
         </div>
         <div class="form-group">
           <label>Повторение групп:</label>
@@ -125,11 +125,11 @@
         <div class="form-group">
           <label>Состав групп:</label>
           <div class="mono-only-box">
-            <input type="checkbox" id="chkMonoOnly" onchange="uiGenerateGroupsTable()"/>
+            <input type="checkbox" id="chkMonoOnly" onchange="requestRegenerate()"/>
             <label for="chkMonoOnly">Только моногруппы</label>
           </div>
         </div>
-        <button class="btn-gen" id="btnGenGroups" onclick="uiGenerateGroupsTable()"><span>⟳ </span> Сформировать</button>
+        <button class="btn-gen" id="btnGenGroups" onclick="requestRegenerate()" title="Сформировать группы заново (при ручных правках спросит подтверждение)">⟳ Сформировать</button>
       </div>
       <div>
         <div class="groups-header-bar">
@@ -147,7 +147,8 @@
               </select>
               <button type="button" class="btn-mono-insert" id="btnInsertMono" onclick="insertMonoGroupFromPanel()">+ Вставить</button>
             </div>
-            <button type="button" class="btn-mono-insert" id="btnOpenImport" onclick="openTextImport()" title="Загрузить текст в бланк ">📥 ЗАГРУЗИТЬ</button>
+            <button type="button" class="btn-mono-insert" id="btnOpenImport" onclick="openTextImport()" title="Загрузить текст в бланк (то же меню открывается правой кнопкой мыши по бланку)">📥 ЗАГРУЗИТЬ</button>
+            <span class="import-badge" id="importBadge" style="display:none" title="Бланк загружен из текста: проверка мягкая (группы только непустые, набор знаков не требуется). Первая перегенерация вернёт строгую проверку.">ИМПОРТ · МЯГКАЯ ПРОВЕРКА</span>
           </div>
           <div><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
         </div>
@@ -179,7 +180,6 @@
         </div>
         <div class="slider-group" style="margin-bottom:0">
           <div class="slider-label"><span>Общая скорость передачи:</span><b id="lblOverallSpeed" style="color:var(--mil-amber)">—</b></div>
-          <div style="font-size:9px;color:var(--mil-dim);margin-top:3px"></div>
         </div>
       </div>
       <div class="panel" style="display:-moz-box;display:-webkit-box;display:flex;-moz-box-orient:vertical;flex-direction:column;-moz-box-pack:justify;justify-content:space-between">
@@ -222,7 +222,7 @@
         <div id="iambicKeyParams" style="display:none">
           <div class="slider-group">
             <div class="slider-label"><span>Скорость автомата передачи:</span><b id="lblIambicSpeed">70 зн/мин</b></div>
-            <input type="range" id="rngIambicSpeed" min="30" max="220" value="70"/>
+            <input type="range" id="rngIambicSpeed" min="30" max="200" value="70"/>
           </div>
           <div class="form-group" style="margin-bottom:8px">
             <label>Орган управления манипулятором:</label>
@@ -336,18 +336,19 @@
           <input type="range" id="rngQrmVol" min="0" max="100" value="25"/>
         </div>
         <div style="margin-top:14px">
-          <button class="action-btn btn-check" id="btnTestTone" style="width:100%;height:32px" onclick="toggleTestTone()">🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН</button>
+          <button class="action-btn btn-check" id="btnTestTone" style="width:100%;height:32px" onclick="toggleTestTone()" title="Включить/выключить тестовый тон тракта">🔊 ВКЛЮЧИТЬ ТЕСТОВЫЙ ТОН</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast" style="display:none"></div>
 <div class="ctx-menu" id="groupsCtxMenu" style="display:none">
-  <div class="ctx-menu-item" onclick="openTextImport()">📥 Загрузить из буфера обмена…</div>
-  <div class="ctx-menu-item" onclick="copyRadiogramToClipboard()">📋 Скопировать радиограмму в буфер</div>
+  <div class="ctx-menu-item" onclick="openTextImport()" title="Открыть пульт загрузки текста в бланк">📥 Загрузить из буфера обмена…</div>
+  <div class="ctx-menu-item" onclick="copyRadiogramToClipboard()" title="Скопировать текущий бланк в буфер обмена">📋 Скопировать радиограмму в буфер</div>
   <div class="ctx-menu-sep"></div>
-  <div class="ctx-menu-item ctx-menu-danger" onclick="clearBlankGroups()">✖ Очистить группы бланка</div>
+  <div class="ctx-menu-item ctx-menu-danger" onclick="clearBlankGroups()" title="Удалить все группы бланка (с подтверждением)">✖ Очистить группы бланка</div>
 </div>
 
 <div class="import-overlay" id="importOverlay" style="display:none">
@@ -372,9 +373,9 @@
     <div class="import-counter" id="importCounter"></div>
     <div class="import-preview" id="importPreview"></div>
     <div class="import-foot">
-      <button type="button" class="btn-hide-preview" onclick="readClipboardIntoImport()">📥 СЧИТАТЬ ИЗ БУФЕРА</button>
-      <button type="button" class="btn-gen" id="btnApplyImport" onclick="applyTextImport()">✓ В БЛАНК</button>
-      <button type="button" class="btn-hide-preview" onclick="closeTextImport()">✕ ОТМЕНА</button>
+      <button type="button" class="btn-hide-preview" onclick="readClipboardIntoImport()" title="Считать текст из буфера обмена">📥 СЧИТАТЬ ИЗ БУФЕРА</button>
+      <button type="button" class="btn-gen" id="btnApplyImport" onclick="applyTextImport()" title="Перенести сформированные группы в бланк">✓ В БЛАНК</button>
+      <button type="button" class="btn-hide-preview" onclick="closeTextImport()" title="Закрыть без применения (Esc)">✕ ОТМЕНА</button>
     </div>
   </div>
 </div>

@@ -591,7 +591,37 @@ function validateInputs() {
 // набор знаков не требуется (движку приёма он не нужен - читаются только
 // ячейки). Сбрасывается при перегенерации/очистке, ручной ввод его не трогает.
 var blankIsImported = false;
+// Признак ручных правок бланка (ввод в ячейки, перетаскивание). Вместе с
+// blankIsImported решает, спрашивать ли подтверждение перед перегенерацией:
+// свежий сгенерированный бланк перестраивается молча, правленый - с confirm.
+var groupsDirty = false;
 var groupsHidden = false;
+
+// Единая точка смены режима «импортированности»: держит бейдж в шапке бланка
+// в согласии с флагом (бейджа может не быть в разметке - тогда только флаг).
+function setBlankImported(v) {
+  blankIsImported = !!v;
+  if (blankIsImported) groupsDirty = false;
+  var badge = document.getElementById("importBadge");
+  if (badge) badge.style.display = blankIsImported ? "inline-block" : "none";
+}
+
+// Охранник перегенерации: явные действия (кнопка, пресеты, селекты) идут через
+// него, тихие системные вызовы (старт, boot) - напрямую в uiGenerateGroupsTable.
+function regenAllowed() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return false;
+  var inputs = document.querySelectorAll(".group-input-val");
+  if (!inputs || !inputs.length) return true;
+  if (!groupsDirty && !blankIsImported) return true;
+  var msg = blankIsImported
+    ? "ПЕРЕГЕНЕРИРОВАТЬ МАШИННЫЕ ГРУППЫ? ЗАГРУЖЕННЫЕ СОХРАНЯТСЯ."
+    : "ПЕРЕГЕНЕРИРОВАТЬ МАШИННЫЕ ГРУППЫ? РУЧНЫЕ СОХРАНЯТСЯ.";
+  try { return !!confirm(msg); } catch (e) { return false; }
+}
+
+function requestRegenerate() {
+  if (regenAllowed()) uiGenerateGroupsTable();
+}
 function toggleHideGroups() {
   groupsHidden = !groupsHidden;
   var container = document.getElementById("groupsContainer");
@@ -610,6 +640,8 @@ function attachGroupInputEvents(inp, gIdx) {
 
   inp.oninput = function () {
     this.value = cleanMorseChars(this.value);
+    markGroupCellManual(findAncestor(this, "group-cell"), true);
+    groupsDirty = true;
     validateInputs();
     updateOverallSpeed();
   };
@@ -626,6 +658,8 @@ function attachGroupInputEvents(inp, gIdx) {
         var full = "";
         for (var i = 0; i < grpLen; i++) full += val;
         this.value = full;
+        markGroupCellManual(findAncestor(this, "group-cell"), true);
+        groupsDirty = true;
       }
       validateInputs();
 
@@ -653,7 +687,9 @@ function attachGroupInputEvents(inp, gIdx) {
         }
         var cell = findAncestor(this, "group-cell");
         if (cell && cell.parentNode) cell.parentNode.removeChild(cell);
+        groupsDirty = true;
         reindexCells();
+        if (blankIsImported && readManualFlags().indexOf(1) === -1) setBlankImported(false);
         var updatedInputs = document.querySelectorAll(".group-input-val");
         document.getElementById("numGroups").value = updatedInputs.length;
         if (prevIdx >= 0 && updatedInputs[prevIdx]) updatedInputs[prevIdx].focus();
@@ -672,7 +708,42 @@ function reindexCells() {
   }
 }
 
-function renderGroupsFromList(groupsList) {
+// Происхождение ячейки: "1" - ручная (написана/исправлена/вставлена/
+// импортирована, переживает перегенерацию), иначе - машинная.
+function markGroupCellManual(cell, manual) {
+  if (!cell || !cell.setAttribute) return;
+  var tip = "Ручная группа — не перегенерируется";
+  var inp = (cell.querySelector) ? cell.querySelector(".group-input-val") : null;
+  if (manual) {
+    cell.setAttribute("data-manual", "1");
+    if (cell.className.indexOf("manual") === -1) cell.className += " manual";
+    cell.title = tip;
+    if (inp) inp.title = tip;
+  } else {
+    if (cell.removeAttribute) cell.removeAttribute("data-manual");
+    cell.className = cell.className.replace(/\bmanual\b/g, "").trim();
+    cell.title = "";
+    if (inp) inp.title = "";
+  }
+}
+
+function isGroupCellManual(cell) {
+  if (!cell || !cell.getAttribute) return false;
+  return cell.getAttribute("data-manual") === "1";
+}
+
+// Флаги ручных ячеек в порядке getGroupsFromTable(): значения и флаги идут
+// синхронно, т.к. читаются из одних и тех же DOM-узлов по порядку.
+function readManualFlags() {
+  var inputs = document.querySelectorAll(".group-input-val");
+  var flags = [];
+  for (var i = 0; i < inputs.length; i++) {
+    flags.push(isGroupCellManual(findAncestor(inputs[i], "group-cell")) ? 1 : 0);
+  }
+  return flags;
+}
+
+function renderGroupsFromList(groupsList, manuals) {
   var container = document.getElementById("groupsContainer");
   container.innerHTML = "";
   var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
@@ -685,6 +756,7 @@ function renderGroupsFromList(groupsList) {
       '<span class="group-cell-idx">№' + (g + 1) + "</span>" +
       '<input type="text" class="group-input-val" value="' + groupsList[g] + '" maxlength="' + grpLen + '">' +
       '<div class="group-chars-display"></div>';
+    markGroupCellManual(cell, manuals && manuals[g]);
     var inp = cell.querySelector(".group-input-val");
     attachGroupInputEvents(inp, g);
     container.appendChild(cell);
@@ -704,12 +776,14 @@ function addNewEmptyGroup() {
   if (rxSessionOn) return;
   var currentGroups = getGroupsFromTable();
   if (currentGroups.length >= 100) {
-    alert("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100.");
+    showToast("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100.");
     return;
   }
   currentGroups.push("");
   document.getElementById("numGroups").value = currentGroups.length;
-  renderGroupsFromList(currentGroups);
+  var addFlags = readManualFlags();
+  addFlags.push(1);
+  renderGroupsFromList(currentGroups, addFlags);
   validateInputs();
   var inputs = document.querySelectorAll(".group-input-val");
   if (inputs.length > 0) inputs[inputs.length - 1].focus();
@@ -728,7 +802,7 @@ function insertMonoGroupFromPanel() {
   var currentGroups = getGroupsFromTable();
 
   if (currentGroups.length + count > 100) {
-    alert("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100 (сейчас: " + currentGroups.length + ").");
+    showToast("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100 (сейчас: " + currentGroups.length + ").");
     return;
   }
 
@@ -736,10 +810,11 @@ function insertMonoGroupFromPanel() {
 
   var monoStr = "";
   for (var i = 0; i < grpLen; i++) monoStr += ch;
-  for (var k = 0; k < count; k++) currentGroups.push(monoStr);
+  var monoFlags = readManualFlags();
+  for (var k = 0; k < count; k++) { currentGroups.push(monoStr); monoFlags.push(1); }
 
   document.getElementById("numGroups").value = currentGroups.length;
-  renderGroupsFromList(currentGroups);
+  renderGroupsFromList(currentGroups, monoFlags);
   validateInputs();
 
   input.value = "";
@@ -982,13 +1057,30 @@ function applyTextImport() {
       }
     }
   }
-  renderGroupsFromList(r.groups);
+  var impFlags = [];
+  for (var fi = 0; fi < r.groups.length; fi++) impFlags.push(1);
+  renderGroupsFromList(r.groups, impFlags);
   document.getElementById("numGroups").value = r.groups.length;
-  blankIsImported = true;
+  setBlankImported(true);
   closeTextImport();
   validateInputs();
   var container = document.getElementById("groupsContainer");
   if (container) container.scrollTop = 0;
+}
+
+// Короткое немодальное уведомление вместо alert(): не блокирует работу,
+// гаснет само. Откат на alert - только если разметки тоста нет (чужой хост).
+var toastTimer = null;
+function showToast(text) {
+  var t = document.getElementById("toast");
+  if (!t) { try { alert(text); } catch (e) {} return; }
+  t.textContent = text;
+  t.style.display = "block";
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () {
+    t.style.display = "none";
+    toastTimer = null;
+  }, 2600);
 }
 
 /* ---------- Контекстное меню бланка (ПКМ) ---------- */
@@ -1042,31 +1134,34 @@ function copyRadiogramToClipboard() {
   var list = getGroupsFromTable();
   var kept = [];
   for (var i = 0; i < list.length; i++) if (list[i]) kept.push(list[i]);
-  if (!kept.length) { alert("БЛАНК ПУСТ: копировать нечего."); return; }
+  if (!kept.length) { showToast("БЛАНК ПУСТ: копировать нечего."); return; }
   var text = kept.join(" ");
   try {
     if (typeof navigator !== "undefined" && navigator.clipboard &&
         typeof navigator.clipboard.writeText === "function" &&
         typeof Promise !== "undefined") {
       navigator.clipboard.writeText(text).then(function () {
-        alert("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
+        showToast("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
       }, function () {
-        if (legacyCopyText(text)) alert("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
-        else alert("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
+        if (legacyCopyText(text)) showToast("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
+        else showToast("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
       });
       return;
     }
   } catch (e) {}
-  if (legacyCopyText(text)) alert("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
-  else alert("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
+  if (legacyCopyText(text)) showToast("РАДИОГРАММА СКОПИРОВАНА: групп " + kept.length + ".");
+  else showToast("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
 }
 
 function clearBlankGroups() {
   hideGroupsCtxMenu();
   if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  try {
+    if (!confirm("ОЧИСТИТЬ ГРУППЫ БЛАНКА?")) return;
+  } catch (e) { return; }
   renderGroupsFromList([]);
   document.getElementById("numGroups").value = 0;
-  blankIsImported = false;
+  setBlankImported(false); groupsDirty = false;
   validateInputs();
 }
 
@@ -1125,28 +1220,70 @@ function initTextImport() {
   }
 }
 
+// Одна случайная моногруппа из взвешенного пула. st - сквозное состояние серии
+// {prev, streak}: больше двух одинаковых подряд не допускаем.
+function genMonoGroup(pool, grpLen, st) {
+  var monoCh, monoTries = 0;
+  do {
+    monoCh = pool[Math.floor(Math.random() * pool.length)];
+    monoTries++;
+  } while (monoCh === st.prev && st.streak >= 2 && monoTries < 15);
+  if (monoCh === st.prev) st.streak++;
+  else { st.prev = monoCh; st.streak = 1; }
+  var monoGrp = "";
+  for (var mc = 0; mc < grpLen; mc++) monoGrp += monoCh;
+  return monoGrp;
+}
+
+function genMixGroup(pool, grpLen) {
+  var grp = "", lastChar = "", repCount = 0;
+  for (var c = 0; c < grpLen; c++) {
+    var candidate, attempts = 0;
+    do {
+      candidate = pool[Math.floor(Math.random() * pool.length)];
+      attempts++;
+    } while (candidate === lastChar && repCount >= 2 && attempts < 15);
+
+    if (candidate === lastChar) repCount++;
+    else { lastChar = candidate; repCount = 1; }
+    grp += candidate;
+  }
+  return grp;
+}
+
+// Односоставной ли текст (все знаки одинаковые) - для учёта ручных моногрупп
+// в сквозной серии генератора.
+function uniformGroupChar(s) {
+  if (!s) return "";
+  var ch0 = s.charAt(0);
+  for (var i = 1; i < s.length; i++) {
+    if (s.charAt(i) !== ch0) return "";
+  }
+  return ch0;
+}
+
 function uiGenerateGroupsTable() {
   if (rxSessionOn) return;
-  blankIsImported = false;
   var container = document.getElementById("groupsContainer");
   var numStr = ("" + document.getElementById("numGroups").value).trim();
-  if (numStr === "") { container.innerHTML = ""; validateInputs(); return; }
+  if (numStr === "") { container.innerHTML = ""; setBlankImported(false); groupsDirty = false; validateInputs(); return; }
 
   var grpCount = parseInt(numStr, 10);
-  if (isNaN(grpCount) || grpCount < 0) { container.innerHTML = ""; validateInputs(); return; }
+  if (isNaN(grpCount) || grpCount < 0) { container.innerHTML = ""; setBlankImported(false); groupsDirty = false; validateInputs(); return; }
   if (grpCount === 0) {
     container.innerHTML = '<div style="padding:15px;color:var(--mil-dim);font-size:11px;width:100%;text-align:center">БЛАНК РАДИОГРАММЫ ПУСТ (ЧИСЛО ГРУПП: 0)</div>';
+    setBlankImported(false); groupsDirty = false;
     validateInputs();
     return;
   }
-  if (grpCount > 100) { container.innerHTML = ""; validateInputs(); return; }
+  if (grpCount > 100) { container.innerHTML = ""; setBlankImported(false); groupsDirty = false; validateInputs(); return; }
 
   var raw = cleanMorseChars(document.getElementById("customCharset").value);
   var uniqueChars = [];
   for (var i = 0; i < raw.length; i++) {
     if (uniqueChars.indexOf(raw[i]) === -1) uniqueChars.push(raw[i]);
   }
-  if (!uniqueChars.length) { container.innerHTML = ""; validateInputs(); return; }
+  if (!uniqueChars.length) { container.innerHTML = ""; setBlankImported(false); groupsDirty = false; validateInputs(); return; }
 
   var rawAcc = cleanMorseChars(document.getElementById("accentCharset").value);
   var uniqueAcc = [];
@@ -1168,46 +1305,42 @@ function uiGenerateGroupsTable() {
   var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
   var monoOnly = document.getElementById("chkMonoOnly");
   var wantMono = !!(monoOnly && monoOnly.checked);
-  var generatedList = [];
 
-  if (wantMono) {
-    // МОНОГРУППЫ: в каждой группе все знаки одинаковые (напр. ЖЖЖЖЖ).
-    // Символ выбирается случайно из того же взвешенного пула, что и обычная
-    // генерация, поэтому приоритетные знаки («Знаки приоритетной отработки»)
-    // сохраняются. Не допускаем больше двух одинаковых моногрупп подряд,
-    // иначе весь бланк может оказаться одним знаком.
-    var prevMono = "", sameStreak = 0;
-    for (var mg = 0; mg < grpCount; mg++) {
-      var monoCh, monoTries = 0;
-      do {
-        monoCh = pool[Math.floor(Math.random() * pool.length)];
-        monoTries++;
-      } while (monoCh === prevMono && sameStreak >= 2 && monoTries < 15);
-      if (monoCh === prevMono) sameStreak++;
-      else { prevMono = monoCh; sameStreak = 1; }
-      var monoGrp = "";
-      for (var mc = 0; mc < grpLen; mc++) monoGrp += monoCh;
-      generatedList.push(monoGrp);
-    }
-  } else {
-    for (var g = 0; g < grpCount; g++) {
-      var grp = "", lastChar = "", repCount = 0;
-      for (var c = 0; c < grpLen; c++) {
-        var candidate, attempts = 0;
-        do {
-          candidate = pool[Math.floor(Math.random() * pool.length)];
-          attempts++;
-        } while (candidate === lastChar && repCount >= 2 && attempts < 15);
+  // Ручные ячейки (написанные/исправленные/вставленные/импортированные) стоят
+  // на своих местах с тем же текстом; машинные слоты генерируются заново.
+  // Сжатие - строго под число групп, режем с конца (confirm уже был).
+  var curVals = getGroupsFromTable();
+  var curFlags = readManualFlags();
+  var slots = [];
+  for (var s = 0; s < grpCount && s < curVals.length; s++) {
+    slots.push({ text: curVals[s], manual: !!curFlags[s] });
+  }
+  while (slots.length < grpCount) slots.push({ text: "", manual: false });
 
-        if (candidate === lastChar) repCount++;
-        else { lastChar = candidate; repCount = 1; }
-        grp += candidate;
+  var monoSt = { prev: "", streak: 0 };
+  var manualLeft = 0;
+  for (var g = 0; g < slots.length; g++) {
+    if (slots[g].manual) {
+      manualLeft++;
+      // Ручная моногруппа участвует в серии, чтобы не вышло три одинаковых.
+      var uch = uniformGroupChar(slots[g].text);
+      if (wantMono && uch) {
+        if (uch === monoSt.prev) monoSt.streak++;
+        else { monoSt.prev = uch; monoSt.streak = 1; }
       }
-      generatedList.push(grp);
+    } else if (wantMono) {
+      slots[g].text = genMonoGroup(pool, grpLen, monoSt);
+    } else {
+      slots[g].text = genMixGroup(pool, grpLen);
     }
   }
 
-  renderGroupsFromList(generatedList);
+  var outList = [], outFlags = [];
+  for (var o = 0; o < slots.length; o++) { outList.push(slots[o].text); outFlags.push(slots[o].manual ? 1 : 0); }
+  renderGroupsFromList(outList, outFlags);
+  document.getElementById("numGroups").value = outList.length;
+  groupsDirty = false;
+  if (!manualLeft) setBlankImported(false);
   validateInputs();
 }
 
@@ -1220,6 +1353,7 @@ function getGroupsFromTable() {
 
 function setPreset(chars) {
   if (rxSessionOn) return;
+  if (!regenAllowed()) return;
   var customField = document.getElementById("customCharset");
   customField.value = chars;
   document.getElementById("accentCharset").value = "";
@@ -1230,11 +1364,14 @@ function setPreset(chars) {
 
 function clearAllTrainer() {
   if (rxSessionOn) return;
+  try {
+    if (!confirm("СБРОСИТЬ БЛАНК: очистить набор знаков, группы и журнал?")) return;
+  } catch (e) { return; }
   var inp = document.getElementById("customCharset");
   inp.value = "";
   document.getElementById("accentCharset").value = "";
   document.getElementById("groupsContainer").innerHTML = "";
-  blankIsImported = false;
+  setBlankImported(false); groupsDirty = false;
   document.getElementById("txtUserInput").value = "";
   document.getElementById("diffBox").style.display = "none";
   setUiText("examReport", "");
@@ -1283,7 +1420,7 @@ function alignSequences(orig, user) {
 
 document.getElementById("btnRxCheck").onclick = function () {
   if (!targetRadiogram) {
-    alert("ПЕРЕДАЧА НЕ ВЫПОЛНЯЛАСЬ. НАЖМИТЕ «ПУСК ПРИЁМА».");
+    showToast("ПЕРЕДАЧА НЕ ВЫПОЛНЯЛАСЬ. НАЖМИТЕ «ПУСК ПРИЁМА».");
     return;
   }
 

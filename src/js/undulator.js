@@ -83,5 +83,11 @@ function renderUndulator() {
   requestAnimationFrame(renderUndulator);
 }
 
-function clearTape() { tapePoints = []; }
+function clearTape() {
+  if (!tapePoints || !tapePoints.length) return;
+  try {
+    if (!confirm("ОЧИСТИТЬ ЛЕНТУ САМОПИСЦА?")) return;
+  } catch (e) { return; }
+  tapePoints = [];
+}
 

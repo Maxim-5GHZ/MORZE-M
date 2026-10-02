@@ -116,6 +116,7 @@ function moveGroupByStep(cell, delta) {
   var focused = (inp && document.activeElement === inp) ? inp : null;
 
   if (moveGroupToIndex(cell, to) === -1) return false;
+  try { groupsDirty = true; } catch (e) {}
 
   if (focused) {
     focused.focus();
@@ -322,6 +323,9 @@ function dndEnd(commit) {
   if (dnd.onBlur) window.removeEventListener("blur", dnd.onBlur, false);
   if (dnd.onKey) document.removeEventListener("keydown", dnd.onKey, false);
 
+  if (commit && dnd.curIndex !== dnd.originIndex && dnd.originIndex !== -1) {
+    try { groupsDirty = true; } catch (e) {}
+  }
   dnd.active = false;
   dnd.armed = false;
   dnd.cell = null;

@@ -46,7 +46,7 @@ function setKeyerMode(mode) {
     if (currentIambicSource === "MOUSE") { vPaddle.style.display = "none"; mousePad.style.display = "block"; }
     else { virtualPaddle.style.display = "flex"; mousePad.style.display = "none"; }
   }
-  clearTx();
+  clearTx(true);
 }
 
 var txHistory = "", currentMorseChar = "", charTimeout = null, wordTimeout = null;
@@ -239,7 +239,12 @@ function resetIambicHardware() {
   updatePaddleVisuals();
 }
 
-function clearTx() {
+function clearTx(silent) {
+  if (!silent && txHistory) {
+    try {
+      if (!confirm("ОЧИСТИТЬ РЕГИСТР ДЕКОДИРОВАННЫХ СИГНАЛОВ?")) return;
+    } catch (e) { return; }
+  }
   txHistory = "";
   currentMorseChar = "";
   estimatedDot = 95;
