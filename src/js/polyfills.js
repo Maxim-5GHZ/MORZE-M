@@ -128,7 +128,10 @@ function attachShortZeroHandler(elem) {
   }, false);
 }
 
-// Прикрепление слушателя ко всем существующим полям ввода
+// Прикрепление слушателя ко всем существующим статичным полям ввода.
+// Ячейки бланка (#groupsContainer .group-input-val) сюда НЕ входят: их ввод,
+// аккорд 0+- и навигацию обслуживают 3 делегированных слушателя контейнера
+// (initBlankDelegation в rx-trainer.js) - те же глобалы isZeroKeyPressed и co.
 function setupShortZeroHandlers() {
   var inputs = [
     document.getElementById("customCharset"),

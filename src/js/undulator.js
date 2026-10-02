@@ -5,7 +5,7 @@
    ========================================================================== */
 var canvas = document.getElementById("undulatorCanvas");
 var ctx = canvas.getContext("2d");
-var tapeState = 0, tapePoints = [], lastUndulatorTime = window.performance && performance.now ? performance.now() : Date.now();
+var tapeState = 0, tapePoints = [], tapeHead = 0, lastUndulatorTime = window.performance && performance.now ? performance.now() : Date.now();
 var logicalCanvasWidth = 800, logicalCanvasHeight = 65, tapeScrollOffset = 0;
 
 function resizeCanvas() {
@@ -39,8 +39,12 @@ function renderUndulator() {
   var dx = speed * dt;
   tapeScrollOffset = (tapeScrollOffset + dx) % 40;
 
-  for (var i = 0; i < tapePoints.length; i++) tapePoints[i].x -= dx;
-  while (tapePoints.length > 0 && tapePoints[0].x < -30) tapePoints.shift();
+  // Сдвиг ленты без shift() на каждом кадре: съеденные слева точки
+  // пропускаются через указатель tapeHead (O(1) вместо O(n)), физическая
+  // чистка префикса - редким splice. Поведение и картинка не меняются.
+  for (var i = tapeHead; i < tapePoints.length; i++) tapePoints[i].x -= dx;
+  while (tapeHead < tapePoints.length && tapePoints[tapeHead].x < -30) tapeHead++;
+  if (tapeHead > 256) { tapePoints.splice(0, tapeHead); tapeHead = 0; }
 
   var targetY = tapeState ? 18 : 48;
   tapePoints.push({ x: logicalCanvasWidth, y: targetY });
@@ -62,12 +66,12 @@ function renderUndulator() {
   }
   ctx.stroke();
 
-  if (tapePoints.length > 1) {
+  if (tapePoints.length - tapeHead > 1) {
     ctx.beginPath();
     ctx.strokeStyle = "#38ff38";
     ctx.lineWidth = 2.2;
-    ctx.moveTo(tapePoints[0].x, tapePoints[0].y);
-    for (var j = 1; j < tapePoints.length; j++) {
+    ctx.moveTo(tapePoints[tapeHead].x, tapePoints[tapeHead].y);
+    for (var j = tapeHead + 1; j < tapePoints.length; j++) {
       var prev = tapePoints[j - 1], curr = tapePoints[j];
       if (prev.y !== curr.y) ctx.lineTo(curr.x, prev.y);
       ctx.lineTo(curr.x, curr.y);
@@ -84,10 +88,11 @@ function renderUndulator() {
 }
 
 function clearTape() {
-  if (!tapePoints || !tapePoints.length) return;
+  if (!tapePoints || tapeHead >= tapePoints.length) return;
   try {
     if (!confirm("ОЧИСТИТЬ ЛЕНТУ САМОПИСЦА?")) return;
   } catch (e) { return; }
   tapePoints = [];
+  tapeHead = 0;
 }
 

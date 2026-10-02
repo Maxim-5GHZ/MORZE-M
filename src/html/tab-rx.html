@@ -1,0 +1,159 @@
+  <div id="tab-rx" class="content-block active">
+    <div class="panel panel-teacher">
+      <h3>Блок формирования учебных радиограмм</h3>
+      <div class="presets-row" id="presetsBlock">
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я')" title="Набор: полный алфавит">★ Полный алфавит</span>
+        <span class="preset-badge" onclick="setPreset('Е И С Т М О А Н Р Д')" title="Набор: базовые буквы">Базовые буквы</span>
+        <span class="preset-badge" onclick="setPreset('Ø 1 2 3 4 5 6 7 8 9')" title="Набор: цифровой блок">Цифровой блок</span>
+        <span class="preset-badge" onclick="setPreset('А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я 0 1 2 3 4 5 6 7 8 9')" title="Набор: буквы и цифры">Буквы и цифры</span>
+        <span class="preset-badge" onclick="setPreset('= / ? , .')" title="Набор: спецзнаки и препинание">Спецзнаки и препинание</span>
+        <span class="preset-badge clear-btn" onclick="clearAllTrainer()" title="Очистить набор знаков, группы и журнал (с подтверждением)">✖ Сброс бланка</span>
+      </div>
+      <div class="inputs-2col">
+        <div class="form-group">
+          <label>Набор знаков (через пробел; короткий ноль: [0]+[-]):</label>
+          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this)" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
+        </div>
+        <div class="form-group">
+          <label>Знаки приоритетной отработки:</label>
+          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this)" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}"></textarea>
+        </div>
+      </div>
+      <div class="error-banner" id="teacherErrorBox"></div>
+      <div class="controls-row-6">
+        <div class="form-group">
+          <label>Размер группы:</label>
+          <select id="groupLength" onchange="requestRegenerate()">
+            <option value="2">2 знака</option>
+            <option value="3">3 знак</option>
+            <option value="4">4 знака</option>
+            <option value="5" selected>5 знаков</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Число групп (0..100):</label>
+          <input type="number" id="numGroups" min="0" max="100" value="12" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){this.blur();}"/>
+        </div>
+        <div class="form-group">
+          <label>Повторение групп:</label>
+          <select id="groupRepeat">
+            <option value="1">1 раз</option>
+            <option value="2">2 раза</option>
+            <option value="3">3 раза</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Повторение знака:</label>
+          <select id="charRepeat">
+            <option value="1" selected>1 раз</option>
+            <option value="2">2 раза</option>
+            <option value="3">3 раза</option>
+            <option value="4">4 раза</option>
+            <option value="5">5 раз</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Вступление (зачин):</label>
+          <select id="selPreambleMode">
+            <option value="NONE">Без вступления</option>
+            <option value="SINGLE_V" selected>Просто Ж (...-)</option>
+            <option value="SERIES_VVV">Серия Ж Ж Ж (...-  ...-  ...-)</option>
+            <option value="HST_VTO">Норматив СРТ: ЖТО (...-  -  ---)</option>
+            <option value="CALL_VVV_EQ">Циркулярное: VVV = (...- ...- ...-  -...-)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Окончание (концовка):</label>
+          <select id="selPostambleMode">
+            <option value="NONE">Без окончания</option>
+            <option value="SINGLE_K" selected>Просто К (-.-)</option>
+            <option value="SERIES_KKK">Серия К К К (-.-  -.-  -.-)</option>
+            <option value="EQ_PERIOD">Знак «точка» = (-...-)</option>
+            <option value="K_EQ">К и точка (-.-  -...-)</option>
+            <option value="AR">Международное AR (.-.-.)</option>
+            <option value="SK">Международное SK (...-.-)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Состав групп:</label>
+          <div class="mono-only-box">
+            <input type="checkbox" id="chkMonoOnly" onchange="requestRegenerate()"/>
+            <label for="chkMonoOnly">Только моногруппы</label>
+          </div>
+        </div>
+        <button class="btn-gen" id="btnGenGroups" onclick="requestRegenerate()" title="Сформировать группы заново (при ручных правках спросит подтверждение)">⟳ Сформировать</button>
+      </div>
+      <div>
+        <div class="groups-header-bar">
+          <div class="groups-header-left">
+            <span style="font-size:10px;color:var(--mil-dim);font-weight:bold">Бланк радиограммы:</span>
+            <div class="mono-insert-bar" id="monoInsertBar">
+              <label>МОНО-ГРУППА:</label>
+              <input type="text" id="monoCharInput" class="mono-char-input" maxlength="1" placeholder="Ж" onkeydown="if((event.keyCode||event.which)===13){insertMonoGroupFromPanel();if(event.preventDefault)event.preventDefault();}"/>
+              <select id="monoCharCount" class="mono-count-select">
+                <option value="1">1 гр.</option>
+                <option value="2">2 гр.</option>
+                <option value="3" selected>3 гр.</option>
+                <option value="5">5 гр.</option>
+                <option value="10">10 гр.</option>
+              </select>
+              <button type="button" class="btn-mono-insert" id="btnInsertMono" onclick="insertMonoGroupFromPanel()">+ Вставить</button>
+            </div>
+            <button type="button" class="btn-mono-insert" id="btnOpenImport" onclick="openTextImport()" title="Загрузить текст в бланк (то же меню открывается правой кнопкой мыши по бланку)">📥 ЗАГРУЗИТЬ</button>
+            <span class="import-badge" id="importBadge" style="display:none" title="Бланк загружен из текста: проверка мягкая (группы только непустые, набор знаков не требуется). Первая перегенерация вернёт строгую проверку.">ИМПОРТ · МЯГКАЯ ПРОВЕРКА</span>
+          </div>
+          <div><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
+        </div>
+        <div class="groups-grid" id="groupsContainer"></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Скоростные нормативы</h3>
+        <div class="speed-toggles">
+          <div class="unit-toggle" id="unitToggle" onclick="toggleSpeedUnit()" title="Переключение единиц измерения скорости: знаки в минуту / длительность точки в мс">
+            <div class="unit-toggle-thumb" id="unitToggleThumb"></div>
+            <span class="unit-toggle-opt on" id="unitToggleOptWpm">ЗН/МИН</span>
+            <span class="unit-toggle-opt" id="unitToggleOptMs">ТОЧКА (МС)</span>
+          </div>
+          <button class="toggle-input-btn" id="toggleInputTypeBtn" type="button" onclick="toggleSpeedInputType()" title="Переключить между числовым вводом (стрелочки) и ползунками (range)">ПОЛЗУНКИ</button>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Скорость посылки:</span><b id="lblCharSpeed">70 зн/мин</b></div>
+          <input type="number" class="num-field" id="rngCharSpeed" min="30" max="200" step="1" value="70" inputmode="numeric" autocomplete="off"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Интервал (Фарнсворт):</span><b id="lblFarnSpeed">50 зн/мин</b></div>
+          <input type="number" class="num-field" id="rngFarnSpeed" min="20" max="70" step="1" value="50" inputmode="numeric" autocomplete="off"/>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Пауза между группами:</span><b id="lblGroupPause">x1.0 (стандарт)</b></div>
+          <input type="number" class="num-field" id="rngGroupPause" min="10" max="50" step="1" value="10" inputmode="numeric" autocomplete="off"/>
+        </div>
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label"><span>Общая скорость передачи:</span><b id="lblOverallSpeed" style="color:var(--mil-amber)">—</b></div>
+        </div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;justify-content:space-between">
+        <h3>Управление приёмным трактом</h3>
+        <div class="noise-box" onclick="toggleNoiseViaBox()">
+          <input type="checkbox" id="chkQuickNoise" onclick="event.stopPropagation(); toggleNoiseFromMain(this.checked);"/>
+          <label for="chkQuickNoise" style="cursor:pointer;font-size:11px">Имитация помех (QRM/QRN) и замираний (QSB)</label>
+        </div>
+        <div class="action-btns">
+          <button class="action-btn btn-start" id="btnRxStart">ПУСК ПРИЁМА</button>
+          <button class="action-btn btn-stop" id="btnRxStop" disabled>СТОП</button>
+          <button class="action-btn btn-check" id="btnRxCheck">КОНТРОЛЬ</button>
+        </div>
+        <div class="rx-status" id="rxStatus"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <h3>Журнал оператора (принятый текст):</h3>
+      <textarea id="txtUserInput" placeholder="Ввод принятых групп через пробел (укороченный 0 вводится как [0]+[-])..."></textarea>
+      <div style="margin-top:8px">
+        <div class="rx-result" id="diffBox" style="display:none"></div>
+        <div id="examReport" style="margin-top:6px;font-weight:bold;color:var(--mil-amber);font-size:11px"></div>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,18 @@
+  <div class="undulator-block">
+    <div class="undulator-header"><span>■ САМОПИСЕЦ ЛЕНТЫ // РЕАЛЬНОЕ ВРЕМЯ</span><span id="lblTapeStatus" style="color:var(--mil-amber)">ЛЕНТА АКТИВНА</span></div>
+    <div class="undulator-canvas-wrap"><canvas id="undulatorCanvas"></canvas></div>
+    <div class="undulator-footer">
+      <div class="undulator-controls">
+        <span>ПРОТЯЖКА:</span>
+        <input type="range" id="rngTapeSpeed" min="40" max="260" value="120" style="width:80px"/>
+        <b id="lblTapeSpeed" style="color:var(--mil-amber);min-width:55px">120 px/s</b>
+        <span style="margin-left:10px">КАНАЛ:</span>
+        <select id="selTapeSource" style="padding:1px 4px;font-size:9px;height:24px;width:auto">
+          <option value="ALL" selected>СКВОЗНОЙ (TX + RX)</option>
+          <option value="TX_ONLY">ТОЛЬКО КЛЮЧ (TX)</option>
+          <option value="RX_ONLY">ТОЛЬКО ЭФИР (RX)</option>
+        </select>
+      </div>
+      <div><button class="btn-hide-preview" onclick="clearTape()">Очистить ленту</button></div>
+    </div>
+  </div>

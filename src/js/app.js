@@ -376,7 +376,7 @@ function rampDropdownSelect(li, ev) {
 function initRampDropdown() {
   var dd = document.getElementById("selRampShape");
   if (!dd) return;
-  rampSetValue("rc", false);
+  rampSetValue("hann", false);
   document.addEventListener("click", function (ev) {
     var el = ev.target, ddEl = document.getElementById("selRampShape");
     if (!ddEl) return;
@@ -426,6 +426,7 @@ if (__morzeHadGroups) {
 } else {
   uiGenerateGroupsTable();
 }
+initBlankDelegation(); // 3 делегированных слушателя бланка (FF38) - до первой отрисовки групп
 initGroupsDragAndDrop();
 initTextImport();
 refreshAllAutoGrows();

@@ -101,7 +101,7 @@ function morzeStoreFactory() {
     toneFreq: "700",
     toneVol: "70",
     rampTime: "10",
-    rampShape: "rc",
+    rampShape: "hann",
     qsbDepth: "50",
     qsbPeriod: "50",
     noiseVol: "35",
@@ -148,7 +148,7 @@ function morzeStoreCollect() {
     o.toneFreq = morzeStoreGetVal("rngToneFreq", "700");
     o.toneVol = morzeStoreGetVal("rngToneVol", "70");
     o.rampTime = morzeStoreGetVal("rngRampTime", "10");
-    o.rampShape = "rc";
+    o.rampShape = "hann";
     try {
       var rampEl = morzeStoreEl("selRampShape");
       if (rampEl && rampEl.value) o.rampShape = rampEl.value;

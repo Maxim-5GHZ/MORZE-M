@@ -20,9 +20,13 @@ SRC_DIR = os.path.join(BASE_DIR, "src")
 TEMPLATE_PATH = os.path.join(SRC_DIR, "index.html")
 BUILD_DIR = os.path.join(BASE_DIR, "build")
 OUTPUT_PATH = os.path.join(BUILD_DIR, "Морзе-М.html")
-OUTPUT_MIN_PATH = os.path.join(BUILD_DIR, "Морзе-М.min.html")
+OUTPUT_MIN_PATH = os.path.join(BUILD_DIR, "Морзе-М.html")
 
 INCLUDE_REGEX = re.compile(r'/\*\s*@include\s+([^\s\*]+)\s*\*/')
+# HTML-компоненты разметки: метка <!-- @include html/имя.html --> с колонки 0.
+# Разворачивается там же, где JS/CSS-включения, т.е. ДО вырезания комментариев
+# и минификации, поэтому strip_html_comments метки уже не видит.
+HTML_INCLUDE_REGEX = re.compile(r'<!--\s*@include\s+([^\s]+)\s*-->')
 
 def resolve_includes(content):
     def replace_match(match):
@@ -36,6 +40,25 @@ def resolve_includes(content):
             print(" [!] ОШИБКА: Файл не найден: {}".format(full_path))
             return match.group(0)
 
+    def replace_html(match):
+        rel_path = match.group(1).strip()
+        full_path = os.path.join(SRC_DIR, rel_path)
+        if os.path.exists(full_path):
+            with open(full_path, "r", encoding="utf-8") as f:
+                print(" [+] Внедрён компонент: {}".format(rel_path))
+                # Метка стоит отдельной строкой с колонки 0 и съедается целиком,
+                # а перевод строки после неё остаётся шаблону. Поэтому финальный
+                # перевод строки компонента отбрасываем, иначе в сборке появится
+                # пустая строка (файлы по POSIX оканчиваются на "\n").
+                text = f.read()
+                if text.endswith("\n"):
+                    text = text[:-1]
+                return text
+        else:
+            print(" [!] ОШИБКА: Файл не найден: {}".format(full_path))
+            return match.group(0)
+
+    content = HTML_INCLUDE_REGEX.sub(replace_html, content)
     return INCLUDE_REGEX.sub(replace_match, content)
 
 # --- Удаление комментариев (только при обычной сборке) -----------------------

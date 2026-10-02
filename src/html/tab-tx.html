@@ -1,0 +1,50 @@
+  <div id="tab-tx" class="content-block">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Конфигурация передающего манипулятора</h3>
+        <div class="keyer-mode-toggle">
+          <button class="keyer-mode-btn active" id="btnModeStraight" onclick="setKeyerMode('straight')">ВЕРТИКАЛЬНЫЙ (РУЧНОЙ)</button>
+          <button class="keyer-mode-btn" id="btnModeIambic" onclick="setKeyerMode('iambic')">ЭЛЕКТРОННЫЙ (IAMBIC)</button>
+        </div>
+        <div id="straightKeyParams">
+          <div class="slider-group">
+            <div class="slider-label"><span>Определяемый темп руки (АРУ):</span><b id="lblTxDetected">70 зн/мин [ПОИСК]</b></div>
+            <div style="font-size:9px;color:var(--mil-dim);margin-top:3px">Динамический адаптивный фильтр темпа (EMA α=0.28).</div>
+          </div>
+        </div>
+        <div id="iambicKeyParams" style="display:none">
+          <div class="slider-group">
+            <div class="slider-label"><span>Скорость автомата передачи:</span><b id="lblIambicSpeed">70 зн/мин</b></div>
+            <input type="range" id="rngIambicSpeed" min="30" max="200" value="70"/>
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label>Орган управления манипулятором:</label>
+            <select id="selIambicInputSource" onchange="switchIambicInputSource(this.value)">
+              <option value="KEYS" selected>КЛАВИАТУРА [ Z / X ] или [ Я / Ч ]</option>
+              <option value="MOUSE">МЫШЬ (ЛКМ - ТОЧКА, ПКМ - ТИРЕ)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin:12px 0">
+          <div class="morse-key-single" id="virtualKey">МАНИПУЛЯТОР (КЛАВИША ПРОБЕЛ)</div>
+          <div class="iambic-paddle-container" id="virtualPaddle" style="display:none">
+            <div class="paddle-lever" id="paddleLeft"><span>● ТОЧКА (DIT)</span><span style="font-size:8px;color:var(--mil-dim)">[ Z ] или [ Я ]</span></div>
+            <div class="paddle-lever" id="paddleRight"><span>▬ ТИРЕ (DAH)</span><span style="font-size:8px;color:var(--mil-dim)">[ X ] или [ Ч ]</span></div>
+          </div>
+          <div class="mouse-pad-zone" id="mousePadZone">
+            <div class="mouse-pad-halves">
+              <div class="mouse-half" id="padHalfLeft"><span>● ЛКМ: ТОЧКА</span><span style="font-size:8px">УДЕРЖАНИЕ ДЛЯ СЕРИИ</span></div>
+              <div class="mouse-pad-divider"></div>
+              <div class="mouse-half" id="padHalfRight"><span>▬ ПКМ: ТИРЕ</span><span style="font-size:8px">ОБА КЛИКА: СЖАТИЕ</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="live-morse-buffer" id="lblLiveMorseBuffer">БУФЕР СИМВОЛА: [ ГОТОВ ]</div>
+        <button class="action-btn btn-stop" style="width:100%;height:32px;margin-top:8px" onclick="clearTx()">Очистить регистр</button>
+      </div>
+      <div class="panel">
+        <h3>Регистр декодированных сигналов:</h3>
+        <div class="rx-result" id="txDecoded" style="height:145px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
