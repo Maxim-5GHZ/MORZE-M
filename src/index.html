@@ -340,6 +340,11 @@
         </div>
       </div>
     </div>
+    <div class="panel" style="margin-bottom:0">
+      <h3>Хранение настроек</h3>
+      <div style="font-size:10px;color:var(--mil-dim);margin-bottom:8px">Состояния сохраняются автоматически в localStorage на этом устройстве. При запрете хранилища изделие работает без сохранения.</div>
+      <button class="action-btn btn-stop" id="btnResetSettings" style="width:100%;height:32px" onclick="resetSettingsToDefaults()" title="Очистить сохранённые состояния и вернуть заводские значения">⟲ НАСТРОЙКИ ПО УМОЛЧАНИЮ</button>
+    </div>
   </div>
 </div>
 
@@ -388,6 +393,7 @@
 /* @include js/rx-trainer.js */
 /* @include js/groups-dnd.js */
 /* @include js/tx-keyer.js */
+/* @include js/storage.js */
 /* @include js/app.js */
 </script>
 </body>

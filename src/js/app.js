@@ -411,12 +411,30 @@ setInterval(function () {
 
 setupShortZeroHandlers();
 resizeCanvas();
+// АВТОСОХРАНЕНИЕ (storage.js): раннее восстановление сырых значений и
+// нормированного состояния скоростей ДО первой отрисовки бланка.
+var __morzeRestored = null;
+try { if (typeof morzeStoreRead === "function") __morzeRestored = morzeStoreRead(); } catch (e) { __morzeRestored = null; }
+try { if (__morzeRestored && typeof morzeStoreApplyEarly === "function") morzeStoreApplyEarly(__morzeRestored); } catch (e) {}
 renderStudyTable();
-uiGenerateGroupsTable();
+var __morzeHadGroups = false;
+try { __morzeHadGroups = !!(__morzeRestored && __morzeRestored.groups && __morzeRestored.groups.length); } catch (e) { __morzeHadGroups = false; }
+if (__morzeHadGroups) {
+  try { renderGroupsFromList(__morzeRestored.groups, __morzeRestored.manuals); } catch (e) { try { uiGenerateGroupsTable(); } catch (e2) {} }
+  try { document.getElementById("numGroups").value = String(__morzeRestored.groups.length); } catch (e) {}
+  try { if (typeof setBlankImported === "function") setBlankImported(!!__morzeRestored.imported); } catch (e) {}
+} else {
+  uiGenerateGroupsTable();
+}
 initGroupsDragAndDrop();
 initTextImport();
 refreshAllAutoGrows();
 initRampDropdown();
-applySpeedInputType();     // согласует тип полей ввода с подписью на кнопке
-renderSpeedControls();   // нормализует стартовые значения и заполняет поля ввода
+if (__morzeRestored) {
+  try { if (typeof morzeStoreApplyLate === "function") morzeStoreApplyLate(__morzeRestored); } catch (e) { applySpeedInputType(); renderSpeedControls(); }
+} else {
+  applySpeedInputType();     // согласует тип полей ввода с подписью на кнопке
+  renderSpeedControls();   // нормализует стартовые значения и заполняет поля ввода
+}
+try { if (typeof morzeStoreBindAuto === "function") morzeStoreBindAuto(); } catch (e) {}
 requestAnimationFrame(renderUndulator);
