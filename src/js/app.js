@@ -329,20 +329,20 @@ function rampSetValue(value, close) {
   if (curText && liText) curText.textContent = liText.textContent;
   var items = dd.querySelectorAll(".ramp-options li");
   for (var i = 0; i < items.length; i++) items[i].className = items[i] === li ? "active" : "";
-  if (close) { dd.classList.remove("open"); dd.classList.remove("up"); }
+  if (close) { removeClass(dd, "open"); removeClass(dd, "up"); }
 }
 
 function rampDropdownToggle(ev) {
   if (ev && ev.stopPropagation) ev.stopPropagation();
   var dd = document.getElementById("selRampShape");
   if (!dd) return;
-  if (dd.classList.contains("open")) dd.classList.remove("open");
+  if (hasClass(dd, "open")) removeClass(dd, "open");
   else rampDropdownOpen(dd);
 }
 
 function rampDropdownOpen(dd) {
-  dd.classList.add("open");
-  dd.classList.remove("up");
+  addClass(dd, "open");
+  removeClass(dd, "up");
   var list = dd.querySelector(".ramp-options");
   if (!list || !dd.getBoundingClientRect || !getComputedStyle) return;
   var r = dd.getBoundingClientRect();
@@ -363,8 +363,8 @@ function rampDropdownOpen(dd) {
   if (clipTop < 0) clipTop = 0;
   var down = clipBottom - r.bottom - 6;
   var up = r.top - clipTop - 6;
-  if (down >= h) dd.classList.remove("up");
-  else dd.classList.add("up");
+  if (down >= h) removeClass(dd, "up");
+  else addClass(dd, "up");
 }
 
 function rampDropdownSelect(li, ev) {
@@ -381,12 +381,12 @@ function initRampDropdown() {
     var el = ev.target, ddEl = document.getElementById("selRampShape");
     if (!ddEl) return;
     while (el) { if (el === ddEl) return; el = el.parentNode; }
-    ddEl.classList.remove("open");
+    removeClass(ddEl, "open");
   });
   document.addEventListener("keydown", function (ev) {
     if (ev.key === "Escape" || ev.keyCode === 27) {
       var ddEl = document.getElementById("selRampShape");
-      if (ddEl) ddEl.classList.remove("open");
+      if (ddEl) removeClass(ddEl, "open");
     }
   });
 }

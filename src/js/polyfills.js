@@ -1,9 +1,10 @@
 /* ==========================================================================
    МОДУЛЬ: ПОЛИФИЛЫ И СОВМЕСТИМОСТЬ (DEBIAN 8 / ASTRA LINUX / FIREFOX 43)
    - innerText для старых Gecko;
-   - DOM-хелперы: findAncestor(), setUiText();
+   - DOM-хелперы: findAncestor(), setUiText(), hasClass/addClass/removeClass;
    - ввод короткого нуля (Ø) сочетанием 0 и -;
-   - фоновый таймер Web Worker (обход троттлинга) с fallback на setTimeout.
+   - фоновый таймер Web Worker (обход троттлинга) с fallback на setTimeout
+     и отменой незаконченных ожиданий (workerSleepCancel).
    ВАЖНО: Worker создаётся ТОЛЬКО из Blob + createObjectURL — внешний файл
    worker'а с флешки (file://) будет заблокирован политикой same-origin.
    ========================================================================== */
@@ -27,6 +28,23 @@ function findAncestor(el, cls) {
 function setUiText(idOrElem, text) {
   var el = typeof idOrElem === "string" ? document.getElementById(idOrElem) : idOrElem;
   if (el) el.textContent = text;
+}
+
+// РАБОТА С КЛАССАМИ ЧЕРЕЗ className (без classList - правило проекта: Gecko 38/ES5).
+// Токены сравниваются с пробелами по краям, чтобы "open" не совпал с "opened".
+function hasClass(el, cls) {
+  return !!el && (" " + el.className + " ").indexOf(" " + cls + " ") !== -1;
+}
+
+function addClass(el, cls) {
+  if (!el || hasClass(el, cls)) return;
+  el.className = (el.className ? el.className.replace(/\s+$/, "") + " " : "") + cls;
+}
+
+function removeClass(el, cls) {
+  if (!el) return;
+  el.className = (" " + el.className + " ").split(" " + cls + " ").join(" ")
+    .replace(/^\s+|\s+$/g, "");
 }
 
 // РЕАЛИЗАЦИЯ 1.2 В: ВВОД КОРОТКОГО НУЛЯ (Ø) ЧЕРЕЗ 0 И -
@@ -146,6 +164,8 @@ function setupShortZeroHandlers() {
 
 var bgTimerWorker = null;
 var workerTimerSeq = 0;
+// id -> { cb:Function, timer:Number|null }. timer заполняется только в fallback'е
+// на setTimeout; для Worker-таймера отмена шлёт в воркер { action: "cancel" }.
 var pendingWorkerCallbacks = {};
 
 try {
@@ -156,19 +176,30 @@ try {
   var workerUrl = window.URL.createObjectURL(workerBlob);
   bgTimerWorker = new Worker(workerUrl);
   bgTimerWorker.onmessage = function (e) {
-    var cb = pendingWorkerCallbacks[e.data.id];
-    if (cb) { delete pendingWorkerCallbacks[e.data.id]; cb(); }
+    var entry = pendingWorkerCallbacks[e.data.id];
+    if (entry) { delete pendingWorkerCallbacks[e.data.id]; entry.cb(); }
   };
 } catch (err) {
   bgTimerWorker = null;
 }
 
-function workerSleep(ms) {
+// holder (необязательно) получает поле id - чтобы таймер можно было отменить
+// до истечения срока (workerSleepCancel).
+function workerSleep(ms, holder) {
   var delay = Math.max(1, Math.round(ms));
   return new Promise(function (resolve) {
-    if (!bgTimerWorker) { setTimeout(resolve, delay); return; }
     var id = ++workerTimerSeq;
-    pendingWorkerCallbacks[id] = resolve;
+    if (holder) holder.id = id;
+    if (!bgTimerWorker) {
+      var entry = { cb: resolve, timer: null };
+      pendingWorkerCallbacks[id] = entry;
+      entry.timer = setTimeout(function () {
+        delete pendingWorkerCallbacks[id];
+        resolve();
+      }, delay);
+      return;
+    }
+    pendingWorkerCallbacks[id] = { cb: resolve, timer: null };
     try {
       bgTimerWorker.postMessage({ action: "start", id: id, ms: delay });
     } catch (e) {
@@ -178,3 +209,14 @@ function workerSleep(ms) {
   });
 }
 
+// ОТМЕНА ОЖИДАЮЩЕГО СНА: промис не выполняется никогда (цепочка-«хвост» умирает
+// и собирается сборщиком мусора), воркер сбрасывает свой таймер.
+function workerSleepCancel(id) {
+  if (!id || !pendingWorkerCallbacks[id]) return;
+  var entry = pendingWorkerCallbacks[id];
+  delete pendingWorkerCallbacks[id];
+  if (entry.timer) { clearTimeout(entry.timer); entry.timer = null; return; }
+  if (bgTimerWorker) {
+    try { bgTimerWorker.postMessage({ action: "cancel", id: id }); } catch (e) {}
+  }
+}

@@ -16,9 +16,22 @@ var RX_STAGE_PRE = 0, RX_STAGE_PRE_PAUSE = 1, RX_STAGE_GROUP = 2,
     RX_STAGE_POST = 3, RX_STAGE_POST_PAUSE = 4, RX_STAGE_DONE = 5;
 var RX_TECH_PAUSE_MS = 1200;   // технологическая пауза после зачина и после окончания
 
+// ОТМЕНА ТЕКУЩЕГО ШАГА RX-ЦЕПОЧКИ. Вызывается из паузы/сброса/окончания: таймер
+// воркера глушится, «хвост» цепочки не просыпается и не дёргает её обработчики.
+var rxSleepRef = null;
+
+function cancelSleepRx() {
+  if (!rxSleepRef) return;
+  workerSleepCancel(rxSleepRef.id);
+  rxSleepRef = null;
+}
+
 function sleepRx(ms) {
   var gen = rxActiveGeneration;
-  return workerSleep(ms).then(function () {
+  var ref = { id: 0 };
+  rxSleepRef = ref;
+  return workerSleep(ms, ref).then(function () {
+    if (rxSleepRef === ref) rxSleepRef = null;
     if (!rxActive || gen !== rxActiveGeneration) throw new Error("STOPPED");
   });
 }
@@ -266,11 +279,14 @@ function rxStep() {
 }
 
 // Запуск/продолжение цепочки шагов. Отказ = «СТОП» во время шага.
+// gen фиксируется на старте цепочки: «хвост» прошлой цепочки (после СТОП→ПРОДОЛЖИТЬ)
+// не имеет права трогать машину, даже если его runId совпадает.
 function rxRunChain(runId) {
+  var gen = rxActiveGeneration;
   rxStep().then(function () {
-    if (runId === rxRunId) rxFinish();
+    if (runId === rxRunId && gen === rxActiveGeneration) rxFinish();
   }, function () {
-    if (runId === rxRunId && rxState !== RX_PAUSED) rxPause();
+    if (runId === rxRunId && gen === rxActiveGeneration && rxState === RX_PLAYING) rxPause();
   });
 }
 // =================== ТРАНСПОРТ ПРИЁМА: ПУСК / СТОП / ПРОДОЛЖИТЬ ===================
@@ -317,6 +333,7 @@ function rxPause() {
   if (rxState !== RX_PLAYING) return;
   rxActive = false;
   rxActiveGeneration++;
+  cancelSleepRx();
   toneOff("RX");
   applyAudioParamsNow();
   rxState = RX_PAUSED;
@@ -329,6 +346,7 @@ function rxResume() {
   initAudio();
   rxActive = true;
   rxActiveGeneration++;
+  cancelSleepRx();
   rxState = RX_PLAYING;
   applyAudioParamsNow();
   setRxTransportUI(RX_PLAYING);
@@ -343,6 +361,7 @@ function rxFinish() {
   rxSessionOn = false;
   rxRun = null;
   rxState = RX_IDLE;
+  cancelSleepRx();
   toneOff("RX");
   applyAudioParamsNow();
   clearAllHighlights();
@@ -360,7 +379,9 @@ function rxReset() {
   rxSessionOn = false;
   rxRun = null;
   rxState = RX_IDLE;
+  rxRunId++;            // «хвост» цепочки прошлой передачи теряет право на машину
   rxActiveGeneration++;
+  cancelSleepRx();
   toneOff("RX");
   applyAudioParamsNow();
   setTrainerLocked(false);
