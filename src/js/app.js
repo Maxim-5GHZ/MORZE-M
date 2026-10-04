@@ -430,6 +430,7 @@ initBlankDelegation(); // 3 делегированных слушателя бл
 initGroupsDragAndDrop();
 initTextImport();
 refreshAllAutoGrows();
+try { if (typeof updateAccentWeightLabel === "function") updateAccentWeightLabel(); } catch (e) {}
 initRampDropdown();
 initRxHotkeys();
 if (__morzeRestored) {

@@ -120,6 +120,7 @@ function morzeStoreFactory() {
     tapeSource: "ALL",
     customCharset: "А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я",
     accentCharset: "",
+    accentWeight: "3",
     groupLength: "5",
     numGroups: "12",
     groupRepeat: "1",
@@ -168,6 +169,7 @@ function morzeStoreCollect() {
     o.tapeSource = morzeStoreGetVal("selTapeSource", "ALL");
     o.customCharset = morzeStoreGetVal("customCharset", "");
     o.accentCharset = morzeStoreGetVal("accentCharset", "");
+    o.accentWeight = morzeStoreGetVal("rngAccentWeight", "3");
     o.groupLength = morzeStoreGetVal("groupLength", "5");
     o.numGroups = morzeStoreGetVal("numGroups", "12");
     o.groupRepeat = morzeStoreGetVal("groupRepeat", "1");
@@ -234,6 +236,7 @@ function morzeStoreApplyEarly(s) {
     if (s.tapeSource !== undefined) morzeStoreSetVal("selTapeSource", s.tapeSource);
     if (s.customCharset !== undefined) morzeStoreSetVal("customCharset", s.customCharset);
     if (s.accentCharset !== undefined) morzeStoreSetVal("accentCharset", s.accentCharset);
+    if (s.accentWeight !== undefined) morzeStoreSetVal("rngAccentWeight", s.accentWeight);
     if (s.groupLength !== undefined) morzeStoreSetVal("groupLength", s.groupLength);
     if (s.numGroups !== undefined) morzeStoreSetVal("numGroups", s.numGroups);
     if (s.groupRepeat !== undefined) morzeStoreSetVal("groupRepeat", s.groupRepeat);
@@ -347,6 +350,7 @@ function morzeStoreApplyLate(s) {
     try { morzeStoreRefreshSliderLabels(); } catch (e) {}
     try { if (typeof applySpeedInputType === "function") applySpeedInputType(); } catch (e) {}
     try { if (typeof renderSpeedControls === "function") renderSpeedControls(); } catch (e) {}
+    try { if (typeof updateAccentWeightLabel === "function") updateAccentWeightLabel(); } catch (e) {}
     try { if (typeof validateInputs === "function") validateInputs(); } catch (e) {}
     try { if (typeof updateOverallSpeed === "function") updateOverallSpeed(); } catch (e) {}
     try { if (typeof refreshAllAutoGrows === "function") refreshAllAutoGrows(); } catch (e) {}
@@ -464,6 +468,7 @@ function resetSettingsToDefaults() {
     try { if (f && f.rampShape && typeof rampSetValue === "function") rampSetValue(f.rampShape, true); } catch (e) {}
     try { if (typeof applySpeedInputType === "function") applySpeedInputType(); } catch (e) {}
     try { if (typeof renderSpeedControls === "function") renderSpeedControls(); } catch (e) {}
+    try { if (typeof updateAccentWeightLabel === "function") updateAccentWeightLabel(); } catch (e) {}
     try { morzeStoreRefreshSliderLabels(); } catch (e) {}
     try { if (typeof validateInputs === "function") validateInputs(); } catch (e) {}
     try { if (typeof updateOverallSpeed === "function") updateOverallSpeed(); } catch (e) {}

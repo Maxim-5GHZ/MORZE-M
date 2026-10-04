@@ -36,6 +36,8 @@ function setTrainerLocked(isLocked) {
 
   document.getElementById("customCharset").disabled = isLocked;
   document.getElementById("accentCharset").disabled = isLocked;
+  var accentWEl = document.getElementById("rngAccentWeight");
+  if (accentWEl) accentWEl.disabled = isLocked;
   document.getElementById("groupLength").disabled = isLocked;
   document.getElementById("numGroups").disabled = isLocked;
   document.getElementById("groupRepeat").disabled = isLocked;

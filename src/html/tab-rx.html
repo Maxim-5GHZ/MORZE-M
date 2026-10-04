@@ -12,11 +12,15 @@
       <div class="inputs-2col">
         <div class="form-group">
           <label>Набор знаков (через пробел; короткий ноль: [0]+[-]):</label>
-          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this)" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
+          <textarea id="customCharset" class="teacher-auto-expand" rows="1" oninput="autoGrow(this);requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}">А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я</textarea>
         </div>
         <div class="form-group">
           <label>Знаки приоритетной отработки:</label>
-          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this)" onchange="requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}"></textarea>
+          <textarea id="accentCharset" class="teacher-auto-expand" rows="1" placeholder="НАПР.: М О" oninput="autoGrow(this);requestRegenerate()" onkeydown="if((event.keyCode||event.which)===13){if(event.preventDefault)event.preventDefault();this.blur();}"></textarea>
+          <div class="slider-group" style="margin-top:6px;margin-bottom:0">
+            <div class="slider-label"><span>Уровень приоритезации:</span><b id="lblAccentWeight">x3</b></div>
+            <input type="range" id="rngAccentWeight" min="1" max="10" step="1" value="3" oninput="onAccentWeightInput()" onchange="onAccentWeightInput()" title="Во сколько раз чаще выпадают приоритетные знаки (x1 — без приоритета)"/>
+          </div>
         </div>
       </div>
       <div class="error-banner" id="teacherErrorBox"></div>

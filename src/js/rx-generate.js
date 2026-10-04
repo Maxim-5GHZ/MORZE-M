@@ -44,6 +44,40 @@ function uniformGroupChar(s) {
   return ch0;
 }
 
+// Вес приоритетных знаков (ползунок «Уровень приоритезации»):
+// во сколько раз чаще выпадают знаки из «Знаков приоритетной отработки».
+// x1 - без приоритета (все знаки равновероятны). Только ES5.
+var ACCENT_WEIGHT_MIN = 1, ACCENT_WEIGHT_MAX = 10, ACCENT_WEIGHT_DEF = 3;
+
+function getAccentWeight() {
+  try {
+    var el = document.getElementById("rngAccentWeight");
+    if (!el) return ACCENT_WEIGHT_DEF;
+    var w = parseInt(el.value, 10);
+    if (isNaN(w)) return ACCENT_WEIGHT_DEF;
+    if (w < ACCENT_WEIGHT_MIN) return ACCENT_WEIGHT_MIN;
+    if (w > ACCENT_WEIGHT_MAX) return ACCENT_WEIGHT_MAX;
+    return w;
+  } catch (e) { return ACCENT_WEIGHT_DEF; }
+}
+
+function updateAccentWeightLabel() {
+  try {
+    var w = getAccentWeight();
+    var lbl = document.getElementById("lblAccentWeight");
+    if (!lbl) return;
+    var txt = "x" + w;
+    if (w === 1) txt += " (выкл)";
+    if ("textContent" in lbl) lbl.textContent = txt;
+    else lbl.innerHTML = txt;
+  } catch (e) {}
+}
+
+function onAccentWeightInput() {
+  updateAccentWeightLabel();
+  requestRegenerate();
+}
+
 function uiGenerateGroupsTable() {
   if (rxSessionOn) return;
   var container = document.getElementById("groupsContainer");
@@ -78,9 +112,10 @@ function uiGenerateGroupsTable() {
   }
 
   var pool = [];
+  var accentW = getAccentWeight();
   for (var u = 0; u < uniqueChars.length; u++) {
     var ch = uniqueChars[u];
-    var weight = validAccents.indexOf(ch) !== -1 ? 3 : 1;
+    var weight = validAccents.indexOf(ch) !== -1 ? accentW : 1;
     for (var w = 0; w < weight; w++) pool.push(ch);
   }
 
