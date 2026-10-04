@@ -431,6 +431,7 @@ initGroupsDragAndDrop();
 initTextImport();
 refreshAllAutoGrows();
 initRampDropdown();
+initRxHotkeys();
 if (__morzeRestored) {
   try { if (typeof morzeStoreApplyLate === "function") morzeStoreApplyLate(__morzeRestored); } catch (e) { applySpeedInputType(); renderSpeedControls(); }
 } else {

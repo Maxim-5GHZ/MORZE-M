@@ -153,7 +153,14 @@
       <textarea id="txtUserInput" placeholder="Ввод принятых групп через пробел (укороченный 0 вводится как [0]+[-])..."></textarea>
       <div style="margin-top:8px">
         <div class="rx-result" id="diffBox" style="display:none"></div>
-        <div id="examReport" style="margin-top:6px;font-weight:bold;color:var(--mil-amber);font-size:11px"></div>
-      </div>
+<div id="examReport" style="margin-top:6px;font-weight:bold;color:var(--mil-amber);font-size:11px"></div>
+<div id="examLog" style="margin-top:8px;font-size:9px;color:var(--mil-dim)">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span>Журнал экзаменов:</span>
+    <button class="btn-hide-small" onclick="examLogClear()" title="Очистить журнал">✕</button>
+  </div>
+  <div id="examLogList" style="max-height:120px;overflow:auto;"></div>
+</div>
+</div>
     </div>
   </div>

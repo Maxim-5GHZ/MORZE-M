@@ -435,3 +435,15 @@ document.getElementById("btnRxStop").onclick = function () {
   if (rxState === RX_PLAYING) rxPause();
   else if (rxState === RX_PAUSED) rxResume();
 };
+
+// ЗАЩИТА ИДУЩЕГО ПРИЁМА ОТ СЛУЧАЙНОГО УХОДА СО СТРАНИЦЫ (закрытие вкладки,
+// обновление, переход). Срабатывает только во время передачи; текст вернёт
+// штатный диалог браузера (современные версии свой текст игнорируют).
+if (typeof window !== "undefined" && window.addEventListener) {
+  window.addEventListener("beforeunload", function (e) {
+    if (rxState !== RX_PLAYING) return;
+    var msg = "ИДЁТ ПРИЁМ РАДИОГРАММЫ. Уйти со страницы?";
+    if (e) e.returnValue = msg;
+    return msg;
+  }, false);
+}

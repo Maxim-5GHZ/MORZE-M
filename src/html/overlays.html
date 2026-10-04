@@ -1,5 +1,14 @@
 <div class="toast" id="toast" style="display:none"></div>
 <div class="ctx-menu" id="groupsCtxMenu" style="display:none">
+  <div id="groupsCtxGroup" style="display:none">
+    <div class="ctx-menu-title" id="groupsCtxGroupTitle">ГРУППА №–</div>
+    <div class="ctx-menu-item" onclick="ctxGroupInsertAbove()" title="Вставить новую пустую группу перед этой">⤴ Вставить пустую выше</div>
+    <div class="ctx-menu-item" onclick="ctxGroupInsertBelow()" title="Вставить новую пустую группу после этой">⤵ Вставить пустую ниже</div>
+    <div class="ctx-menu-item" onclick="ctxGroupDuplicate()" title="Создать копию этой группы сразу после неё">⧉ Дублировать группу</div>
+    <div class="ctx-menu-item" onclick="ctxGroupCopy()" title="Скопировать текст этой группы в буфер обмена">📋 Копировать группу в буфер</div>
+    <div class="ctx-menu-item ctx-menu-danger" onclick="ctxGroupDelete()" title="Удалить эту группу из бланка (с подтверждением)">✖ Удалить группу</div>
+    <div class="ctx-menu-sep"></div>
+  </div>
   <div class="ctx-menu-item" onclick="openTextImport()" title="Открыть пульт загрузки текста в бланк">📥 Загрузить из буфера обмена…</div>
   <div class="ctx-menu-item" onclick="copyRadiogramToClipboard()" title="Скопировать текущий бланк в буфер обмена">📋 Скопировать радиограмму в буфер</div>
   <div class="ctx-menu-sep"></div>

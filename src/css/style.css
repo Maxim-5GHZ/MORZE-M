@@ -194,6 +194,7 @@ textarea{width:100%;height:70px;resize:vertical;color:var(--mil-green);font-size
 .ctx-menu-danger{color:#ff9691}
 .ctx-menu-danger:hover{background:#331312;color:#ff9691}
 .ctx-menu-sep{height:1px;background:#2e3b28;margin:3px 4px}
+.ctx-menu-title{padding:8px 10px 4px;color:var(--mil-amber);font-size:11px;font-weight:bold;white-space:nowrap;letter-spacing:1px}
 .import-overlay{position:fixed;left:0;top:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,.62);overflow-y:auto}
 .import-panel{width:560px;max-width:92%;margin:36px auto;background:#141b12;border:1px solid #4a5c44;box-shadow:0 10px 28px rgba(0,0,0,.7);padding:10px 12px 12px 12px}
 .import-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--mil-amber);font-size:11px;font-weight:bold;letter-spacing:1px}

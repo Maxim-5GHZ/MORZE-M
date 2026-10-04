@@ -68,6 +68,39 @@ function morzeStoreLsDel() {
   } catch (e) {}
 }
 
+/* --- Журнал результатов экзаменов --- */
+var MORZE_EXAM_KEY = "morze-m-exam-log-v1";
+function examLogAppend(errors, total, percent, mark) {
+  try {
+    if (typeof localStorage === "undefined" || !localStorage) return;
+    var log = [];
+    var raw = localStorage.getItem(MORZE_EXAM_KEY);
+    if (raw) {
+      try { log = JSON.parse(raw); } catch (e) { log = []; }
+    }
+    // сохраняем последние 50 результатов
+    log.push({ errors: errors, total: total, percent: percent, mark: mark, date: new Date().toLocaleString() });
+    if (log.length > 50) log.splice(0, log.length - 50);
+    localStorage.setItem(MORZE_EXAM_KEY, JSON.stringify(log));
+  } catch (e) {}
+}
+function examLogRead() {
+  try {
+    if (typeof localStorage === "undefined" || !localStorage) return null;
+    var raw = localStorage.getItem(MORZE_EXAM_KEY);
+    if (raw) {
+      try { return JSON.parse(raw); } catch (e) { return null; }
+    }
+    return null;
+  } catch (e) { return null; }
+}
+function examLogClear() {
+  try {
+    if (typeof localStorage === "undefined" || !localStorage) return;
+    localStorage.removeItem(MORZE_EXAM_KEY);
+  } catch (e) {}
+}
+
 /* --- Чтение: битая строка / чужая версия -> null (заводские) --- */
 function morzeStoreRead() {
   var raw = morzeStoreLsGet();

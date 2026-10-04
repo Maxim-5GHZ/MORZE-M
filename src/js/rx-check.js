@@ -82,5 +82,29 @@ document.getElementById("btnRxCheck").onclick = function () {
   else if (errors <= 5) mark = "УДОВЛЕТВОРИТЕЛЬНО (3)";
 
   setUiText("examReport", "ИТОГ: ПРИНЯТО ВЕРНО " + Math.max(0, total - errors) + " ИЗ " + total + " (" + percent + "%). ОШИБОК: " + errors + ". ОЦЕНКА: " + mark);
-};
+  // Запись в журнал экзаменов
+  if (typeof examLogAppend === "function") {
+    examLogAppend(errors, total, percent, mark);
+  }
+  // Рендеринг журнала экзаменов
+  renderExamLog();
+}
+function renderExamLog() {
+  var log = typeof examLogRead === "function" ? examLogRead() : null;
+  var container = document.getElementById("examLogList");
+  if (!container) return;
+  if (!log || !log.length) {
+    container.innerHTML = "Пока нет результатов экзаменов.";
+    return;
+  }
+  var html = "";
+  for (var i = log.length - 1; i >= 0; i--) {
+    var entry = log[i];
+    html += "<div style='margin:2px 0;padding:2px 4px;border-radius:3px;background:#1a2416;color:var(--mil-amber)'>";
+    html += "<span style='font-size:10px'>" + entry.date + "</span> ";
+    html += "<span>" + entry.mark + " (" + entry.total - entry.errors + "/" + entry.total + ")</span>";
+    html += "</div>";
+  }
+  container.innerHTML = html;
+}
 

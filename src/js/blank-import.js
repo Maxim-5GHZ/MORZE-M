@@ -265,9 +265,19 @@ function hideGroupsCtxMenu() {
   if (m) m.style.display = "none";
 }
 
-function showGroupsCtxMenu(x, y) {
+function showGroupsCtxMenu(x, y, grpIdx) {
   var m = document.getElementById("groupsCtxMenu");
   if (!m) return;
+  // Контекст группы: индекс ячейки под курсором (-1 - клик мимо групп).
+  ctxGroupIndex = (typeof grpIdx === "number") ? grpIdx : -1;
+  var list = getGroupsFromTable();
+  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) ctxGroupIndex = -1;
+  var box = document.getElementById("groupsCtxGroup");
+  if (box) {
+    box.style.display = ctxGroupIndex >= 0 ? "block" : "none";
+    var title = document.getElementById("groupsCtxGroupTitle");
+    if (title && ctxGroupIndex >= 0) setUiText(title, "ГРУППА №" + (ctxGroupIndex + 1));
+  }
   m.style.display = "block";
   m.style.left = "0px";
   m.style.top = "0px";
@@ -340,6 +350,71 @@ function clearBlankGroups() {
   validateInputs();
 }
 
+function ctxGroupInsertAbove() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  var list = getGroupsFromTable();
+  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var newList = list.slice();
+  newList.splice(ctxGroupIndex, 0, "");
+  document.getElementById("numGroups").value = newList.length;
+  renderGroupsFromList(newList, readManualFlags());
+  validateInputs();
+}
+
+function ctxGroupInsertBelow() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  var list = getGroupsFromTable();
+  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var newList = list.slice();
+  newList.splice(ctxGroupIndex + 1, 0, "");
+  document.getElementById("numGroups").value = newList.length;
+  renderGroupsFromList(newList, readManualFlags());
+  validateInputs();
+}
+
+function ctxGroupDuplicate() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  var list = getGroupsFromTable();
+  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var newList = list.slice();
+  newList.splice(ctxGroupIndex + 1, 0, list[ctxGroupIndex]);
+  document.getElementById("numGroups").value = newList.length;
+  renderGroupsFromList(newList, readManualFlags());
+  validateInputs();
+}
+
+function ctxGroupCopy() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  var list = getGroupsFromTable();
+  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var text = list[ctxGroupIndex];
+  if (!text) { showToast("ГРУППА ПУСТА: что копировать?"); return; }
+  if (typeof navigator !== "undefined" && navigator.clipboard &&
+      typeof navigator.clipboard.writeText === "function") {
+    navigator.clipboard.writeText(text).then(function () {
+      showToast("СКОПИРОВАНО: " + text);
+    }, function () {
+      if (legacyCopyText(text)) showToast("СКОПИРОВАНО: " + text);
+      else showToast("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
+    });
+  } else {
+    if (legacyCopyText(text)) showToast("СКОПИРОВАНО: " + text);
+    else showToast("НЕ УДАЛОСЬ СКОПИРОВАТЬ: буфер недоступен.");
+  }
+}
+
+function ctxGroupDelete() {
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  if (!confirm("УДАЛИТЬ ГРУППУ " + (ctxGroupIndex + 1) + "?")) return;
+  var list = getGroupsFromTable();
+  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var newList = list.slice();
+  newList.splice(ctxGroupIndex, 1);
+  document.getElementById("numGroups").value = newList.length;
+  renderGroupsFromList(newList, readManualFlags());
+  validateInputs();
+}
+
 function initTextImport() {
   var container = document.getElementById("groupsContainer");
   if (container && !container.__ctxBound) {
@@ -353,9 +428,23 @@ function initTextImport() {
         if (e.stopPropagation) e.stopPropagation();
         var x = (typeof e.clientX === "number") ? e.clientX : 0;
         var y = (typeof e.clientY === "number") ? e.clientY : 0;
+        // Определяем индекс группы под курсором
+        var groupIndex = -1;
+        var cell = document.elementFromPoint(x, y);
+        while (cell && cell !== document) {
+          if (cell.className && (" " + cell.className + " ").indexOf(" group-cell ") !== -1) {
+            // находим индекс среди всех group-cell (кроме add)
+            var cells = document.querySelectorAll("#groupsContainer .group-cell:not(.group-cell-add)");
+            for (var i = 0; i < cells.length; i++) {
+              if (cells[i] === cell) { groupIndex = i; break; }
+            }
+            break;
+          }
+          cell = cell.parentNode;
+        }
         // Не даём DnD увидеть правую кнопку как начало перетаскивания:
         // DnD слушает только ЛКМ (e.button !== 0 - выход), так что тихо.
-        showGroupsCtxMenu(x, y);
+        showGroupsCtxMenu(x, y, groupIndex);
         return false;
       }, false);
     } else if (container.attachEvent) {
