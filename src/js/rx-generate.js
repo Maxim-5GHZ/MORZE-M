@@ -87,15 +87,19 @@ function uiGenerateGroupsTable() {
   var grpLen = parseInt(document.getElementById("groupLength").value, 10) || 5;
   var monoOnly = document.getElementById("chkMonoOnly");
   var wantMono = !!(monoOnly && monoOnly.checked);
+  // Галочка «Сохранять ручные набранные группы»: если снята - ручные флаги
+  // игнорируются, все слоты генерируются заново как машинные.
+  var keepEl = document.getElementById("chkKeepManual");
+  var keepManual = !keepEl || !!keepEl.checked;
 
   // Ручные ячейки (написанные/исправленные/вставленные/импортированные) стоят
   // на своих местах с тем же текстом; машинные слоты генерируются заново.
-  // Сжатие - строго под число групп, режем с конца (confirm уже был).
+  // Сжатие - строго под число групп, режем с конца.
   var curVals = getGroupsFromTable();
   var curFlags = readManualFlags();
   var slots = [];
   for (var s = 0; s < grpCount && s < curVals.length; s++) {
-    slots.push({ text: curVals[s], manual: !!curFlags[s] });
+    slots.push({ text: curVals[s], manual: keepManual && !!curFlags[s] });
   }
   while (slots.length < grpCount) slots.push({ text: "", manual: false });
 

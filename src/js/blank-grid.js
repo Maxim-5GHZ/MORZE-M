@@ -41,6 +41,8 @@ function setTrainerLocked(isLocked) {
   document.getElementById("groupRepeat").disabled = isLocked;
   document.getElementById("charRepeat").disabled = isLocked;
   document.getElementById("chkMonoOnly").disabled = isLocked;
+  var keepManualEl = document.getElementById("chkKeepManual");
+  if (keepManualEl) keepManualEl.disabled = isLocked;
   document.getElementById("selPreambleMode").disabled = isLocked;
   document.getElementById("selPostambleMode").disabled = isLocked;
   document.getElementById("btnGenGroups").disabled = isLocked;
@@ -181,9 +183,7 @@ function validateInputs() {
 // набор знаков не требуется (движку приёма он не нужен - читаются только
 // ячейки). Сбрасывается при перегенерации/очистке, ручной ввод его не трогает.
 var blankIsImported = false;
-// Признак ручных правок бланка (ввод в ячейки, перетаскивание). Вместе с
-// blankIsImported решает, спрашивать ли подтверждение перед перегенерацией:
-// свежий сгенерированный бланк перестраивается молча, правленый - с confirm.
+// Признак ручных правок бланка (ввод в ячейки, перетаскивание).
 var groupsDirty = false;
 var groupsHidden = false;
 
@@ -198,15 +198,11 @@ function setBlankImported(v) {
 
 // Охранник перегенерации: явные действия (кнопка, пресеты, селекты) идут через
 // него, тихие системные вызовы (старт, boot) - напрямую в uiGenerateGroupsTable.
+// Подтверждение убрано как лишнее: перегенерация выполняется сразу, а галочка
+// «Сохранять ручные набранные группы» решает, переживут ли её ручные группы.
 function regenAllowed() {
   if (typeof rxSessionOn !== "undefined" && rxSessionOn) return false;
-  var inputs = document.querySelectorAll(".group-input-val");
-  if (!inputs || !inputs.length) return true;
-  if (!groupsDirty && !blankIsImported) return true;
-  var msg = blankIsImported
-    ? "ПЕРЕГЕНЕРИРОВАТЬ МАШИННЫЕ ГРУППЫ? ЗАГРУЖЕННЫЕ СОХРАНЯТСЯ."
-    : "ПЕРЕГЕНЕРИРОВАТЬ МАШИННЫЕ ГРУППЫ? РУЧНЫЕ СОХРАНЯТСЯ.";
-  try { return !!confirm(msg); } catch (e) { return false; }
+  return true;
 }
 
 function requestRegenerate() {
@@ -249,11 +245,17 @@ function blankInputFromEvent(e) {
 
 // Единый обработчик ввода: автозамена 0-/-0 -> Ø (бывший per-element input
 // из polyfills.js) + чистка cleanMorseChars (бывший oninput), с удержанием
-// каретки при замене.
+// каретки при замене. СТРОГО КИРИЛЛИЦА: латиница транслитерируется по коду
+// Морзе (A->А, CQ->ЦЩ), мусор вырезается. Новый знак сразу пополняет
+// «Набор знаков», чтобы бланк и набор не расходились.
 function handleBlankInputEvent(target) {
   var raw = target.value;
   var val = ("" + raw).toUpperCase().replace(/Ё/g, "Е");
-  val = val.replace(/0-|-0/g, "Ø").replace(/[^A-ZА-Я0-9Ø=\/?,\.]/g, "");
+  val = val.replace(/0-|-0/g, "Ø");
+  try {
+    if (typeof latinToCyrMorse === "function") val = latinToCyrMorse(val);
+  } catch (e) {}
+  val = val.replace(/[^А-Я0-9Ø=\/?,\.]/g, "");
   if (raw !== val) {
     var s = null;
     try { s = target.selectionStart; } catch (e) { s = null; }
@@ -269,6 +271,9 @@ function handleBlankInputEvent(target) {
   }
   markGroupCellManual(findAncestor(target, "group-cell"), true);
   groupsDirty = true;
+  try {
+    if (typeof syncTextToCharset === "function") syncTextToCharset(val);
+  } catch (e3) {}
   validateInputs();
   updateOverallSpeed();
 }

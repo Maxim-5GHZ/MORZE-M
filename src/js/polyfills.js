@@ -150,6 +150,24 @@ function attachShortZeroHandler(elem) {
 // Ячейки бланка (#groupsContainer .group-input-val) сюда НЕ входят: их ввод,
 // аккорд 0+- и навигацию обслуживают 3 делегированных слушателя контейнера
 // (initBlankDelegation в rx-trainer.js) - те же глобалы isZeroKeyPressed и co.
+// Дополнительно вешается живой КИРИЛЛИЧЕСКИЙ фильтр (normalizeMorseField из
+// morse-db.js): латиница транслитерируется по коду Морзе, мусор вырезается.
+function attachCyrFilter(elem, allowSpaces) {
+  if (!elem || elem.__cyrAttached) return;
+  elem.__cyrAttached = true;
+  elem.addEventListener("input", function () {
+    try {
+      if (typeof normalizeMorseField === "function") {
+        normalizeMorseField(elem, allowSpaces);
+        if (typeof autoGrow === "function" &&
+            elem.className && elem.className.indexOf("teacher-auto-expand") !== -1) {
+          autoGrow(elem);
+        }
+      }
+    } catch (e) {}
+  }, false);
+}
+
 function setupShortZeroHandlers() {
   var inputs = [
     document.getElementById("customCharset"),
@@ -160,6 +178,10 @@ function setupShortZeroHandlers() {
   for (var i = 0; i < inputs.length; i++) {
     if (inputs[i]) attachShortZeroHandler(inputs[i]);
   }
+  attachCyrFilter(document.getElementById("customCharset"), true);
+  attachCyrFilter(document.getElementById("accentCharset"), true);
+  attachCyrFilter(document.getElementById("monoCharInput"), false);
+  attachCyrFilter(document.getElementById("txtUserInput"), true);
 }
 
 var bgTimerWorker = null;

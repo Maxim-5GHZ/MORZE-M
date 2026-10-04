@@ -42,7 +42,83 @@ for (var i = 0; i < MORSE_DB.length; i++) {
 
 function cleanMorseChars(str) {
   if (!str) return "";
-  return ("" + str).toUpperCase().replace(/Ё/g, "Е").replace(/[^A-ZА-Я0-9Ø=\/?,\.]/gi, "");
+  var s = ("" + str).toUpperCase().replace(/Ё/g, "Е");
+  s = latinToCyrMorse(s);
+  // СТРОГО КИРИЛЛИЦА: буквы только А-Я, латиница A-Z уже переведена
+  // транслитом по коду Морзе выше. Цифры и служ. знаки трогаем.
+  return s.replace(/[^А-Я0-9Ø=\/?,\.]/g, "");
+}
+
+// Тот же набор, но с пробелами/переносами: для живых полей «Набор знаков»
+// и «Журнал оператора», где пробел - разделитель.
+function cleanMorseCharsSpaced(str) {
+  if (!str) return "";
+  var s = ("" + str).toUpperCase().replace(/Ё/g, "Е");
+  s = s.replace(/0-|-0/g, "Ø");
+  s = latinToCyrMorse(s);
+  return s.replace(/[^А-Я0-9Ø=\/?,\.\s]/g, "");
+}
+
+// Морзе-транслит латиницы в кириллицу ПО КОДУ (CQ -> ЦЩ, V -> Ж и т.д.).
+// Единая таблица (раньше жила только в blank-import.js как IMPORT_LAT2CYR).
+var LAT2CYR_MORSE = {
+  A: "А", B: "Б", C: "Ц", D: "Д", E: "Е", F: "Ф", G: "Г", H: "Х",
+  I: "И", J: "Й", K: "К", L: "Л", M: "М", N: "Н", O: "О", P: "П",
+  Q: "Щ", R: "Р", S: "С", T: "Т", U: "У", V: "Ж", W: "В", X: "Ъ",
+  Y: "Ы", Z: "З"
+};
+
+function latinToCyrMorse(s) {
+  if (!s) return "";
+  var table = LAT2CYR_MORSE;
+  try {
+    if (typeof IMPORT_LAT2CYR !== "undefined" && IMPORT_LAT2CYR) table = IMPORT_LAT2CYR;
+  } catch (e) {}
+  var out = "";
+  for (var i = 0; i < s.length; i++) {
+    var ch = s.charAt(i);
+    out += table[ch] || ch;
+  }
+  return out;
+}
+
+// Живая нормализация поля ввода: верхний регистр, Ё->Е, 0-/-0->Ø,
+// латиница->кириллица, вырезание мусора. Каретка сохраняется.
+// allowSpaces: true - для набора знаков и журнала (пробел-разделитель).
+function normalizeMorseField(el, allowSpaces) {
+  if (!el || typeof el.value !== "string") return;
+  var raw = el.value;
+  var val = ("" + raw).toUpperCase().replace(/Ё/g, "Е");
+  val = val.replace(/0-|-0/g, "Ø");
+  val = latinToCyrMorse(val);
+  val = allowSpaces
+    ? val.replace(/[^А-Я0-9Ø=\/?,\.\s]/g, "")
+    : val.replace(/[^А-Я0-9Ø=\/?,\.]/g, "");
+  if (raw !== val) {
+    var s = null, e = null;
+    try { s = el.selectionStart; e = el.selectionEnd; } catch (ex) { s = null; }
+    el.value = val;
+    if (typeof s === "number" && typeof e === "number") {
+      try {
+        var diff = raw.length - val.length;
+        var ns = s - diff, ne = e - diff;
+        if (ns < 0) ns = 0;
+        if (ne < 0) ne = 0;
+        if (ns > val.length) ns = val.length;
+        if (ne > val.length) ne = val.length;
+        el.setSelectionRange(ns, ne);
+      } catch (ex2) {}
+    }
+  }
+}
+
+// Добавить все знаки текста в «Набор знаков», которых там ещё нет.
+function syncTextToCharset(text) {
+  var clean = cleanMorseChars(text);
+  if (!clean) return;
+  for (var i = 0; i < clean.length; i++) {
+    ensureCharInCharset(clean.charAt(i));
+  }
 }
 
 function autoGrow(el) {

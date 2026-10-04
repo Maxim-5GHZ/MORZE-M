@@ -81,7 +81,14 @@
             <label for="chkMonoOnly">Только моногруппы</label>
           </div>
         </div>
-        <button class="btn-gen" id="btnGenGroups" onclick="requestRegenerate()" title="Сформировать группы заново (при ручных правках спросит подтверждение)">⟳ Сформировать</button>
+        <div class="form-group form-group-check">
+          <label>Ручные группы:</label>
+          <div class="mono-only-box" title="Если включено — набранные вручную группы переживают переформирование. Если выключено — все группы генерируются заново">
+            <input type="checkbox" id="chkKeepManual" checked="checked"/>
+            <label for="chkKeepManual">Сохранять ручные набранные группы</label>
+          </div>
+        </div>
+        <button class="btn-gen" id="btnGenGroups" onclick="requestRegenerate()" title="Сформировать группы заново (ручные группы сохраняются, если включена галочка)">⟳ Сформировать</button>
       </div>
       <div>
         <div class="groups-header-bar">

@@ -127,6 +127,7 @@ function morzeStoreFactory() {
     preamble: "SINGLE_V",
     postamble: "SINGLE_K",
     monoOnly: false,
+    keepManual: true,
     monoCount: "3",
     studySpeed: "70",
     iambicSpeed: "70",
@@ -174,6 +175,7 @@ function morzeStoreCollect() {
     o.preamble = morzeStoreGetVal("selPreambleMode", "SINGLE_V");
     o.postamble = morzeStoreGetVal("selPostambleMode", "SINGLE_K");
     o.monoOnly = morzeStoreGetChecked("chkMonoOnly", false);
+    o.keepManual = morzeStoreGetChecked("chkKeepManual", true);
     o.monoCount = morzeStoreGetVal("monoCharCount", "3");
     o.studySpeed = morzeStoreGetVal("rngStudySpeed", "70");
     o.iambicSpeed = morzeStoreGetVal("rngIambicSpeed", "70");
@@ -239,6 +241,7 @@ function morzeStoreApplyEarly(s) {
     if (s.preamble !== undefined) morzeStoreSetVal("selPreambleMode", s.preamble);
     if (s.postamble !== undefined) morzeStoreSetVal("selPostambleMode", s.postamble);
     if (s.monoOnly !== undefined) morzeStoreSetChecked("chkMonoOnly", s.monoOnly);
+    if (s.keepManual !== undefined) morzeStoreSetChecked("chkKeepManual", s.keepManual);
     if (s.monoCount !== undefined) morzeStoreSetVal("monoCharCount", s.monoCount);
     if (s.studySpeed !== undefined) morzeStoreSetVal("rngStudySpeed", s.studySpeed);
     if (s.iambicSpeed !== undefined) morzeStoreSetVal("rngIambicSpeed", s.iambicSpeed);

@@ -20,9 +20,16 @@ var IMPORT_LAT2CYR = {
 
 var IMPORT_MAX_GROUPS = 100;
 
+// Индекс группы под ПКМ-курсором (-1 - клик мимо групп). Объявлен явно,
+// чтобы чтение до первого showGroupsCtxMenu не давало ReferenceError.
+var ctxGroupIndex = -1;
+
 // Нормализация сырого текста: верхний регистр, Ё -> Е, короткий ноль 0-/-0
 // -> Ø (та же конвенция, что и ручной ввод), морзе-транслит, чистка мусора.
 function importTranslitLatin(s) {
+  try {
+    if (typeof latinToCyrMorse === "function") return latinToCyrMorse(s);
+  } catch (e) {}
   var out = "";
   for (var i = 0; i < s.length; i++) {
     var ch = s.charAt(i);
@@ -41,12 +48,14 @@ function importNormalizeStream(raw) {
 }
 
 // Слова для режима «по словам»: пробелы/переносы - разделители групп.
+// СТРОГО КИРИЛЛИЦА: латиница уже переведена транслитом выше, здесь и далее
+// буквы только А-Я (cleanMorseChars тоже кириллический).
 function importSplitWords(raw) {
   if (!raw) return [];
   var s = ("" + raw).toUpperCase().replace(/Ё/g, "Е");
   s = s.replace(/0-|-0/g, "Ø");
   s = importTranslitLatin(s);
-  s = s.replace(/[^A-ZА-Я0-9Ø=\/?,\.\s]/gi, " ");
+  s = s.replace(/[^А-Я0-9Ø=\/?,\.\s]/g, " ");
   var parts = s.split(/\s+/);
   var words = [];
   for (var i = 0; i < parts.length; i++) {
@@ -263,6 +272,21 @@ function showToast(text) {
 function hideGroupsCtxMenu() {
   var m = document.getElementById("groupsCtxMenu");
   if (m) m.style.display = "none";
+  ctxGroupIndex = -1;
+}
+
+// Поставить фокус в ячейку idx и прокрутить к ней: после вставки пустой
+// группы курсор сразу в ней, меню уже закрыто и ничего не перекрывает.
+function ctxFocusGroupInput(idx) {
+  try {
+    var inputs = document.querySelectorAll(".group-input-val");
+    if (!inputs || idx < 0 || idx >= inputs.length) return;
+    var cell = document.getElementById("grp-cell-" + idx);
+    if (cell && cell.scrollIntoView) {
+      try { cell.scrollIntoView(false); } catch (e) {}
+    }
+    inputs[idx].focus();
+  } catch (e) {}
 }
 
 function showGroupsCtxMenu(x, y, grpIdx) {
@@ -351,43 +375,66 @@ function clearBlankGroups() {
 }
 
 function ctxGroupInsertAbove() {
-  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) { hideGroupsCtxMenu(); return; }
   var list = getGroupsFromTable();
-  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var idx = ctxGroupIndex;
+  if (idx < 0 || idx >= list.length) { hideGroupsCtxMenu(); return; }
+  if (list.length >= IMPORT_MAX_GROUPS) { hideGroupsCtxMenu(); showToast("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100."); return; }
+  hideGroupsCtxMenu();
+  var flags = readManualFlags();
   var newList = list.slice();
-  newList.splice(ctxGroupIndex, 0, "");
+  newList.splice(idx, 0, "");
+  flags.splice(idx, 0, 1);
   document.getElementById("numGroups").value = newList.length;
-  renderGroupsFromList(newList, readManualFlags());
+  renderGroupsFromList(newList, flags);
+  groupsDirty = true;
   validateInputs();
+  ctxFocusGroupInput(idx);
 }
 
 function ctxGroupInsertBelow() {
-  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) { hideGroupsCtxMenu(); return; }
   var list = getGroupsFromTable();
-  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var idx = ctxGroupIndex;
+  if (idx < 0 || idx >= list.length) { hideGroupsCtxMenu(); return; }
+  if (list.length >= IMPORT_MAX_GROUPS) { hideGroupsCtxMenu(); showToast("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100."); return; }
+  hideGroupsCtxMenu();
+  var flags = readManualFlags();
   var newList = list.slice();
-  newList.splice(ctxGroupIndex + 1, 0, "");
+  newList.splice(idx + 1, 0, "");
+  flags.splice(idx + 1, 0, 1);
   document.getElementById("numGroups").value = newList.length;
-  renderGroupsFromList(newList, readManualFlags());
+  renderGroupsFromList(newList, flags);
+  groupsDirty = true;
   validateInputs();
+  ctxFocusGroupInput(idx + 1);
 }
 
 function ctxGroupDuplicate() {
-  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) { hideGroupsCtxMenu(); return; }
   var list = getGroupsFromTable();
-  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  var idx = ctxGroupIndex;
+  if (idx < 0 || idx >= list.length) { hideGroupsCtxMenu(); return; }
+  if (list.length >= IMPORT_MAX_GROUPS) { hideGroupsCtxMenu(); showToast("ПРЕВЫШЕН ЛИМИТ: Максимальное число групп — 100."); return; }
+  hideGroupsCtxMenu();
+  var flags = readManualFlags();
   var newList = list.slice();
-  newList.splice(ctxGroupIndex + 1, 0, list[ctxGroupIndex]);
+  newList.splice(idx + 1, 0, list[idx]);
+  flags.splice(idx + 1, 0, 1);
   document.getElementById("numGroups").value = newList.length;
-  renderGroupsFromList(newList, readManualFlags());
+  renderGroupsFromList(newList, flags);
+  groupsDirty = true;
   validateInputs();
+  ctxFocusGroupInput(idx + 1);
 }
 
 function ctxGroupCopy() {
-  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) { hideGroupsCtxMenu(); return; }
   var list = getGroupsFromTable();
-  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
-  var text = list[ctxGroupIndex];
+  var idx = ctxGroupIndex;
+  hideGroupsCtxMenu();
+  if (idx < 0 || idx >= list.length) return;
+  var text = list[idx];
   if (!text) { showToast("ГРУППА ПУСТА: что копировать?"); return; }
   if (typeof navigator !== "undefined" && navigator.clipboard &&
       typeof navigator.clipboard.writeText === "function") {
@@ -404,15 +451,22 @@ function ctxGroupCopy() {
 }
 
 function ctxGroupDelete() {
-  if (typeof rxSessionOn !== "undefined" && rxSessionOn) return;
-  if (!confirm("УДАЛИТЬ ГРУППУ " + (ctxGroupIndex + 1) + "?")) return;
+  if (typeof rxSessionOn !== "undefined" && rxSessionOn) { hideGroupsCtxMenu(); return; }
+  var idx = ctxGroupIndex;
   var list = getGroupsFromTable();
-  if (ctxGroupIndex < 0 || ctxGroupIndex >= list.length) return;
+  if (idx < 0 || idx >= list.length) { hideGroupsCtxMenu(); return; }
+  hideGroupsCtxMenu();
+  var flags = readManualFlags();
   var newList = list.slice();
-  newList.splice(ctxGroupIndex, 1);
+  newList.splice(idx, 1);
+  flags.splice(idx, 1);
   document.getElementById("numGroups").value = newList.length;
-  renderGroupsFromList(newList, readManualFlags());
+  renderGroupsFromList(newList, flags);
+  groupsDirty = true;
+  if (blankIsImported && flags.indexOf(1) === -1) setBlankImported(false);
   validateInputs();
+  if (newList.length) ctxFocusGroupInput(idx < newList.length ? idx : newList.length - 1);
+  showToast("ГРУППА №" + (idx + 1) + " УДАЛЕНА.");
 }
 
 function initTextImport() {

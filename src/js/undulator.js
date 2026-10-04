@@ -89,9 +89,6 @@ function renderUndulator() {
 
 function clearTape() {
   if (!tapePoints || tapeHead >= tapePoints.length) return;
-  try {
-    if (!confirm("ОЧИСТИТЬ ЛЕНТУ САМОПИСЦА?")) return;
-  } catch (e) { return; }
   tapePoints = [];
   tapeHead = 0;
 }

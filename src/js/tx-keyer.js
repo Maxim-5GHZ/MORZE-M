@@ -240,11 +240,6 @@ function resetIambicHardware() {
 }
 
 function clearTx(silent) {
-  if (!silent && txHistory) {
-    try {
-      if (!confirm("ОЧИСТИТЬ РЕГИСТР ДЕКОДИРОВАННЫХ СИГНАЛОВ?")) return;
-    } catch (e) { return; }
-  }
   txHistory = "";
   currentMorseChar = "";
   estimatedDot = 95;
