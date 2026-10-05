@@ -110,10 +110,12 @@
               </select>
               <button type="button" class="btn-mono-insert" id="btnInsertMono" onclick="insertMonoGroupFromPanel()">+ Вставить</button>
             </div>
-            <button type="button" class="btn-mono-insert" id="btnOpenImport" onclick="openTextImport()" title="Загрузить текст в бланк (то же меню открывается правой кнопкой мыши по бланку)">📥 ЗАГРУЗИТЬ</button>
+          </div>
+          <div class="groups-header-center">
+            <button type="button" class="btn-import-center" id="btnOpenImport" onclick="openTextImport()" title="Загрузить текст в бланк (то же меню открывается правой кнопкой мыши по бланку)">📥 ЗАГРУЗИТЬ</button>
             <span class="import-badge" id="importBadge" style="display:none" title="Бланк загружен из текста: проверка мягкая (группы только непустые, набор знаков не требуется). Первая перегенерация вернёт строгую проверку.">ИМПОРТ · МЯГКАЯ ПРОВЕРКА</span>
           </div>
-          <div><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
+          <div class="groups-header-right"><button class="btn-hide-preview" onclick="toggleHideGroups()"><span id="lblHideGroups">Скрыть от оператора</span></button></div>
         </div>
         <div class="groups-grid" id="groupsContainer"></div>
       </div>
