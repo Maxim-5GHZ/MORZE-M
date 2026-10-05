@@ -148,6 +148,7 @@ function morzeStoreFactory() {
     importSync: true,
     userInput: "",
     speedUnitMode: "WPM",
+    pauseUnitMode: "MS",
     speedRange: false,
     charWpm: 70,
     farnWpm: 50,
@@ -207,6 +208,7 @@ function morzeStoreCollect() {
     o.importSync = morzeStoreGetChecked("importSyncCharset", true);
     o.userInput = morzeStoreGetVal("txtUserInput", "");
     try { o.speedUnitMode = (typeof speedUnitMode !== "undefined") ? speedUnitMode : "WPM"; } catch (e) { o.speedUnitMode = "WPM"; }
+    try { o.pauseUnitMode = (typeof pauseUnitMode !== "undefined") ? pauseUnitMode : "MS"; } catch (e) { o.pauseUnitMode = "MS"; }
     try { o.speedRange = (typeof speedInputIsRange !== "undefined") ? !!speedInputIsRange : false; } catch (e) { o.speedRange = false; }
     try { o.charWpm = (typeof speedCharWpm !== "undefined") ? speedCharWpm : 70; } catch (e) { o.charWpm = 70; }
     try { o.farnWpm = (typeof speedFarnWpm !== "undefined") ? speedFarnWpm : 50; } catch (e) { o.farnWpm = 50; }
@@ -269,6 +271,7 @@ function morzeStoreApplyEarly(s) {
     if (s.importSync !== undefined) morzeStoreSetChecked("importSyncCharset", s.importSync);
     if (s.userInput !== undefined) morzeStoreSetVal("txtUserInput", s.userInput);
     try { if (s.speedUnitMode === "MS" || s.speedUnitMode === "WPM") speedUnitMode = s.speedUnitMode; } catch (e) {}
+    try { if (s.pauseUnitMode === "DOTS" || s.pauseUnitMode === "MS") pauseUnitMode = s.pauseUnitMode; } catch (e) {}
     try { if (s.speedRange !== undefined) speedInputIsRange = !!s.speedRange; } catch (e) {}
     try { var cw = parseFloat(s.charWpm); if (cw > 0 && isFinite(cw)) speedCharWpm = cw; } catch (e) {}
     try { var fw = parseFloat(s.farnWpm); if (fw > 0 && isFinite(fw)) speedFarnWpm = fw; } catch (e) {}
@@ -421,7 +424,7 @@ function morzeStoreBindAuto() {
     }
   } catch (e) {}
   try {
-    var names = ["rampDropdownSelect", "toggleSpeedUnit", "toggleSpeedInputType",
+    var names = ["rampDropdownSelect", "toggleSpeedUnit", "togglePauseUnit", "toggleSpeedInputType",
       "setKeyerMode", "switchIambicInputSource", "toggleNoiseFromMain", "toggleNoiseViaBox",
       "renderGroupsFromList", "uiGenerateGroupsTable", "setPreset", "clearAllTrainer",
       "insertMonoGroupFromPanel", "addNewEmptyGroup", "applyTextImport", "clearBlankGroups",

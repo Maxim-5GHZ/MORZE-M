@@ -42,7 +42,11 @@ function sleepRx(ms) {
 // точки в мс), поэтому переключение тумблера единиц не влияет на звук.
 function getLiveAtomTimings() {
   var charSpd = speedCharWpm;
-  var farnSpd = Math.min(charSpd, speedFarnWpm);
+  // Без Math.min: паузы короче стандарта разрешены, farn идёт до 3*char.
+  // Границы держит normalizeSpeedState (app.js): farn в [20, 3*char] даёт
+  // charPause >= 0, mult не ниже farn/(7*char) даёт groupPause >= 0.
+  // Math.max ниже - второй рубеж на случай гонки ползунков до нормализации.
+  var farnSpd = speedFarnWpm;
   var grpMult = speedGrpMult;
   var dotMs = 6000.0 / charSpd;
   var farnDotMs = 6000.0 / farnSpd;

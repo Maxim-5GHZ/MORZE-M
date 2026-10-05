@@ -133,6 +133,14 @@
           <div class="slider-label"><span>Скорость посылки:</span><b id="lblCharSpeed">70 зн/мин</b></div>
           <input type="number" class="num-field" id="rngCharSpeed" min="30" max="200" step="1" value="70" inputmode="numeric" autocomplete="off"/>
         </div>
+        <div class="pause-unit-row" id="pauseUnitRow" style="display:none">
+          <div class="slider-label"><span>Интервал и паузы — скорость в точках / мс:</span></div>
+          <div class="unit-toggle ms" id="pauseUnitToggle" onclick="togglePauseUnit()" title="Скорость в точках/мс для интервала и пауз между группами (только в режиме ТОЧКА)">
+            <div class="unit-toggle-thumb" id="pauseUnitToggleThumb"></div>
+            <span class="unit-toggle-opt" id="pauseUnitToggleOptDots">ТОЧКИ</span>
+            <span class="unit-toggle-opt on" id="pauseUnitToggleOptMs">МС</span>
+          </div>
+        </div>
         <div class="slider-group">
           <div class="slider-label"><span>Интервал (Фарнсворт):</span><b id="lblFarnSpeed">50 зн/мин</b></div>
           <input type="number" class="num-field" id="rngFarnSpeed" min="20" max="70" step="1" value="50" inputmode="numeric" autocomplete="off"/>

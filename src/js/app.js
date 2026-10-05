@@ -116,6 +116,11 @@ var rngStudy = document.getElementById("rngStudySpeed");
 // в выбранных единицах, поэтому переключение тумблера не влияет на звук.
 var speedUnitMode = 'WPM';
 var speedCharWpm = 70, speedFarnWpm = 50, speedGrpMult = 1.0;
+// РЕЖИМ ПАУЗ ВНУТРИ РЕЖИМА ТОЧКА (МС): 'MS' - интервал и межгрупповая пауза
+// в миллисекундах (прежнее поведение), 'DOTS' - в кратности точке (точек).
+// Действует только при speedUnitMode === 'MS' и только на два поля:
+// интервал и пауза между группами. Скорость посылки всегда остаётся в мс.
+var pauseUnitMode = 'MS';
 var CHAR_WPM_MIN = 30, CHAR_WPM_MAX = 200;
 var FARN_WPM_MIN = 20;
 var GRP_MULT_MIN = 1.0, GRP_MULT_MAX = 5.0;
@@ -134,56 +139,142 @@ function groupPauseMsByMult(mult) {
   return Math.max(0, wpmToDotMs(speedFarnWpm) * 7 * mult - wpmToDotMs(speedCharWpm));
 }
 
+// Тумблер пауз активен: режим ТОЧКА (МС) + выбраны ТОЧКИ.
+function pauseDotsActive() {
+  return speedUnitMode === 'MS' && pauseUnitMode === 'DOTS';
+}
+// Полные интервалы в кратности точке (включая замыкающий межэлементный такт):
+// K_межбукв = 3*char/farn (стандарт 3), K_межгрупп = 7*mult*char/farn (стандарт 7).
+function charGapDots() {
+  if (!(speedFarnWpm > 0)) return 3;
+  return 3 * speedCharWpm / speedFarnWpm;
+}
+function groupGapDots() {
+  if (!(speedFarnWpm > 0)) return 7;
+  return 7 * speedGrpMult * speedCharWpm / speedFarnWpm;
+}
+// Подпись к K: стандарт / ниже стандарта / без пометки (выше стандарта).
+function gapStdHint(k, std) {
+  if (Math.abs(k - std) < 0.05) return " (стандарт)";
+  if (k < std) return " (ниже стандарта)";
+  return "";
+}
+
 // Приведение нормализованного состояния к допустимым пределам + защита связки
 // Фарнсворта. ОКРУГЛЕНИЯ ЗДЕСЬ НАМЕРЕННО НЕТ: состояние хранит точное
 // значение, иначе переключение «зн/мин <-> мс» перестаёт быть чистой
 // конвертацией (70.588 зн/мин превратился бы в 71, а обратно - в 85 мс
 // вместо исходных 85.71). Округление живёт только в отображении.
+// Паузы КОРОЧЕ стандарта разрешены: K_межбукв до 1 (farn до 3*char),
+// K_межгрупп до 1 (mult до farn/(7*char)). Пол - физический: при K < 1 пауза
+// ушла бы в минус (в тракте она всё равно упёрлась бы в 0 через Math.max,
+// а подпись врала бы). Старые сохранения (farn <= char, mult >= 1)
+// заведомо внутри новых границ - молча подхватываются.
 function normalizeSpeedState() {
   if (!(speedCharWpm > 0)) speedCharWpm = 70;
   speedCharWpm = clampNum(speedCharWpm, CHAR_WPM_MIN, CHAR_WPM_MAX);
   if (!(speedFarnWpm > 0)) speedFarnWpm = FARN_WPM_MIN;
-  if (speedFarnWpm > speedCharWpm) speedFarnWpm = speedCharWpm;
-  speedFarnWpm = clampNum(speedFarnWpm, FARN_WPM_MIN, speedCharWpm);
+  speedFarnWpm = clampNum(speedFarnWpm, FARN_WPM_MIN, 3 * speedCharWpm);
   if (!(speedGrpMult > 0)) speedGrpMult = GRP_MULT_MIN;
-  speedGrpMult = clampNum(speedGrpMult, GRP_MULT_MIN, GRP_MULT_MAX);
+  var multFloor = speedFarnWpm / (7 * speedCharWpm);
+  if (speedGrpMult < multFloor) speedGrpMult = multFloor;
+  if (speedGrpMult > GRP_MULT_MAX) speedGrpMult = GRP_MULT_MAX;
 }
 
 // Пересчёт состояния -> поля ввода (min/max/step/value) и текстовые метки.
 function renderSpeedControls() {
   normalizeSpeedState();
   var msMode = speedUnitMode === 'MS';
+  var dotsMode = pauseDotsActive();
   var dotMs = wpmToDotMs(speedCharWpm);
   var farnDotMs = wpmToDotMs(speedFarnWpm);
 
+  // Строка тумблера пауз видна только в режиме ТОЧКА (МС); его состояние
+  // синхронизируем здесь же - единый источник истины (перерисовка после
+  // восстановления из localStorage тоже проходит через эту функцию).
+  try {
+    var prow = document.getElementById("pauseUnitRow");
+    if (prow) prow.style.display = msMode ? "" : "none";
+    var ptg = document.getElementById("pauseUnitToggle");
+    if (ptg) {
+      if (pauseUnitMode === "MS") { if (ptg.className.indexOf("ms") === -1) ptg.className += " ms"; }
+      else ptg.className = ptg.className.replace(/\s*ms\b/g, "");
+    }
+    var oD = document.getElementById("pauseUnitToggleOptDots"), oM = document.getElementById("pauseUnitToggleOptMs");
+    if (oD) oD.className = "unit-toggle-opt" + (pauseUnitMode === "DOTS" ? " on" : "");
+    if (oM) oM.className = "unit-toggle-opt" + (pauseUnitMode === "MS" ? " on" : "");
+  } catch (e2) {}
+
   rngChar.min = msMode ? Math.round(wpmToDotMs(CHAR_WPM_MAX)) : CHAR_WPM_MIN;
   rngChar.max = msMode ? Math.round(wpmToDotMs(CHAR_WPM_MIN)) : CHAR_WPM_MAX;
+  rngChar.step = 1;
 
   if (msMode) {
     // Режим ТОЧКА - инверсия шкалы: меньше миллисекунд, выше скорость.
     // Поле, которое сейчас редактируется, не перезаписываем: иначе браузерные
     // стрелки «прыгают» (поле уводит значение мимо того числа, что ввёл user).
     if (rngChar !== speedEditingEl) rngChar.value = Math.round(dotMs);
-    rngFarn.min = Math.round(dotMs);            // Фарнсворт не быстрее посылки
-    rngFarn.max = Math.round(wpmToDotMs(FARN_WPM_MIN));
-    if (rngFarn !== speedEditingEl) rngFarn.value = Math.round(farnDotMs);
-    rngGrpPause.min = Math.round(groupPauseMsByMult(GRP_MULT_MIN));  // пауза короче x1.0 невозможна
-    rngGrpPause.max = Math.round(groupPauseMsByMult(GRP_MULT_MAX));
-    if (rngGrpPause !== speedEditingEl) {
-      rngGrpPause.value = clampNum(Math.round(groupPauseMsByMult(speedGrpMult)), rngGrpPause.min, rngGrpPause.max);
-    }
     setUiText("lblCharSpeed", Math.round(dotMs) + " мс");
-    setUiText("lblFarnSpeed", Math.round(farnDotMs) + " мс");
-    setUiText("lblGroupPause", Math.round(groupPauseMsByMult(speedGrpMult)) + " мс");
+    if (dotsMode) {
+      // Интервал и пауза в кратности точке: K_межбукв (стандарт 3, пол 1),
+      // K_межгрупп (стандарт 7, пол 1). Ниже стандарта - можно,
+      // ниже пола - не даст нормализация. Скорость посылки остаётся в мс.
+      var kChar = charGapDots();
+      var kGrp = groupGapDots();
+      // ВАЖНО: шаг "any", а не 0.5. Значение округляем до 0.1, а база шага -
+      // дробный min (напр. 24.1): (37.9-24.1)/0.5 не целое -> stepMismatch,
+      // и Firefox подсвечивает поле красным (:-moz-ui-invalid). С "any"
+      // проверки шага нет, стрелки идут по 1 точке, дробный ввод свободный.
+      // Границы целочисленные/ceil: округлённое значение всегда внутри,
+      // иначе снова красное (range underflow/overflow).
+      var kCharMax = 3 * speedCharWpm / FARN_WPM_MIN;
+      rngFarn.min = 1;
+      rngFarn.max = Math.ceil(kCharMax * 10) / 10;
+      rngFarn.step = "any";
+      if (rngFarn !== speedEditingEl) rngFarn.value = clampNum(Math.round(kChar * 10) / 10, 1, rngFarn.max);
+      var kGrpMax = 35 * speedCharWpm / speedFarnWpm;
+      rngGrpPause.min = 1;
+      rngGrpPause.max = Math.ceil(kGrpMax * 10) / 10;
+      rngGrpPause.step = "any";
+      if (rngGrpPause !== speedEditingEl) {
+        rngGrpPause.value = clampNum(Math.round(kGrp * 10) / 10, 1, rngGrpPause.max);
+      }
+      var kCharTxt = (Math.round(kChar * 10) / 10).toFixed(1);
+      var kGrpTxt = (Math.round(kGrp * 10) / 10).toFixed(1);
+      setUiText("lblFarnSpeed", kCharTxt + " точек (пауза " + Math.round(getLiveAtomTimings().charPauseMs) + " мс)" + gapStdHint(kChar, 3));
+      setUiText("lblGroupPause", kGrpTxt + " точек (пауза " + Math.round(groupPauseMsByMult(speedGrpMult)) + " мс)" + gapStdHint(kGrp, 7));
+    } else {
+      rngFarn.step = 1;
+      rngGrpPause.step = 1;
+      // Фарнсворт быстрее посылки разрешён (до 3*char): интервал короче
+      // стандарта. min целочисленный вниз (floor): округлённое значение поля
+      // всегда внутри [min, max], иначе Firefox даст красное (underflow).
+      rngFarn.min = Math.floor(dotMs / 3);
+      rngFarn.max = Math.round(wpmToDotMs(FARN_WPM_MIN));
+      if (rngFarn !== speedEditingEl) rngFarn.value = clampNum(Math.round(farnDotMs), rngFarn.min, rngFarn.max);
+      var grpFloor = speedFarnWpm / (7 * speedCharWpm);
+      rngGrpPause.min = Math.round(groupPauseMsByMult(grpFloor));  // всегда 0: пол K=1
+      rngGrpPause.max = Math.round(groupPauseMsByMult(GRP_MULT_MAX));
+      if (rngGrpPause !== speedEditingEl) {
+        rngGrpPause.value = clampNum(Math.round(groupPauseMsByMult(speedGrpMult)), rngGrpPause.min, rngGrpPause.max);
+      }
+      setUiText("lblFarnSpeed", Math.round(farnDotMs) + " мс");
+      setUiText("lblGroupPause", Math.round(groupPauseMsByMult(speedGrpMult)) + " мс");
+    }
   } else {
     // Поля показывают округлённое представление, состояние остаётся точным.
+    // Фарнсворт до 3*char, множитель от динамического пола (K_межгрупп >= 1).
+    // min целочисленный вниз: округлённое значение всегда внутри границ.
+    rngFarn.step = 1;
+    rngGrpPause.step = 1;
+    var wpmGrpFloor = speedFarnWpm / (7 * speedCharWpm);
     rngChar.value = Math.round(speedCharWpm);
     rngFarn.min = FARN_WPM_MIN;
-    rngFarn.max = Math.round(speedCharWpm);
-    rngFarn.value = Math.round(speedFarnWpm);
-    rngGrpPause.min = GRP_MULT_MIN * 10;
+    rngFarn.max = Math.round(3 * speedCharWpm);
+    rngFarn.value = clampNum(Math.round(speedFarnWpm), FARN_WPM_MIN, rngFarn.max);
+    rngGrpPause.min = Math.floor(wpmGrpFloor * 10);
     rngGrpPause.max = GRP_MULT_MAX * 10;
-    rngGrpPause.value = Math.round(speedGrpMult * 10);
+    rngGrpPause.value = clampNum(Math.round(speedGrpMult * 10), rngGrpPause.min, rngGrpPause.max);
     var mTxt = speedGrpMult.toFixed(1);
     setUiText("lblCharSpeed", Math.round(speedCharWpm) + " зн/мин");
     setUiText("lblFarnSpeed", Math.round(speedFarnWpm) + " зн/мин");
@@ -202,8 +293,25 @@ function readSpeedInput(el, kind) {
   if (isNaN(v) || el.value === "") return false;
   if (speedUnitMode === 'MS') {
     if (kind === 'char') speedCharWpm = dotMsToWpm(v);
-    else if (kind === 'farn') speedFarnWpm = dotMsToWpm(v);
-    else speedGrpMult = (v + wpmToDotMs(speedCharWpm)) / (7 * wpmToDotMs(speedFarnWpm));
+    else if (kind === 'farn') {
+      // В точках поле - полный межбуквенный интервал K (стандарт 3, пол 1):
+      // farn = 3*char/K. Ниже 1 не пускаем (там уже отрицательная пауза),
+      // остальное выровняет нормализация.
+      if (pauseUnitMode === 'DOTS') {
+        if (v < 1) v = 1;
+        speedFarnWpm = 3 * speedCharWpm / v;
+      } else speedFarnWpm = dotMsToWpm(v);
+    }
+    else {
+      // В точках поле - полный межгрупповой интервал K (стандарт 7, пол 1):
+      // mult = K*farn/(7*char). Пол и потолок держит нормализация.
+      if (pauseUnitMode === 'DOTS') {
+        if (!(speedCharWpm > 0)) speedCharWpm = 70;
+        if (!(speedFarnWpm > 0)) speedFarnWpm = speedCharWpm;
+        speedGrpMult = v * speedFarnWpm / (7 * speedCharWpm);
+      }
+      else speedGrpMult = (v + wpmToDotMs(speedCharWpm)) / (7 * wpmToDotMs(speedFarnWpm));
+    }
   } else {
     if (kind === 'char') speedCharWpm = v;
     else if (kind === 'farn') speedFarnWpm = v;
@@ -232,6 +340,17 @@ function toggleSpeedUnit() {
   if (oM) oM.className = "unit-toggle-opt" + (speedUnitMode === 'MS' ? " on" : "");
   // Смена единиц - чистая конвертация: сбрасываем «редактируемое» поле, чтобы
   // значения в полях пересчитались из того же самого состояния.
+  // Видимость и подсветка тумблера пауз - в renderSpeedControls().
+  speedEditingEl = null;
+  renderSpeedControls();
+}
+
+// ТУМБЛЕР ПАУЗ (только в режиме ТОЧКА): ТОЧКИ <-> МС для интервала и паузы
+// между группами. Скорость посылки не затрагивается. Чистая конвертация:
+// нормализованное состояние (char/farn/mult) не меняется, меняется лишь
+// представление двух полей. Подсветка и видимость - в renderSpeedControls().
+function togglePauseUnit() {
+  pauseUnitMode = pauseUnitMode === 'DOTS' ? 'MS' : 'DOTS';
   speedEditingEl = null;
   renderSpeedControls();
 }

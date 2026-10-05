@@ -7,6 +7,7 @@
    ========================================================================== */
 var audioCtx = null, mainToneOsc = null, keyingGain = null, qsbGain = null, qsbLfo = null, qsbDepthGain = null, masterToneGain = null, toneFilter = null;
 var noiseNode = null, noiseGain = null, qrmOsc = null, qrmGain = null;
+var masterComp = null;
 var noiseEnabled = false, rxActive = false, isTestToneOn = false;
 // Модуляция QSB (LFO -> AudioParam) подключается ТОЛЬКО на время действия
 // затухания: в старых Gecko постоянная a-rate связь с параметром громкости
@@ -146,7 +147,31 @@ function initAudio() {
     keyingGain.connect(toneFilter);
     toneFilter.connect(qsbGain);
     qsbGain.connect(masterToneGain);
-    masterToneGain.connect(audioCtx.destination);
+    // Динамический компрессор/лимитер перед destination: собирает все ветви
+    // (тон, QRN, QRM) и не даёт сумме уйти в цифровой клиппинг при их
+    // одновременном наложении на полной громкости. Параметры по README:
+    // порог -14 дБ, компрессия 8:1, атака 3 мс, спад 60 мс, мягкое колено.
+    // Gecko 43: createDynamicsCompressor есть (с Firefox 25), AudioParams
+    // выставляются через setValueAtTime. Если узла нет (экзотический движок),
+    // ветви коммутируются напрямую в destination, как раньше.
+    var mixBus = null;
+    if (audioCtx.createDynamicsCompressor) {
+      try {
+        masterComp = audioCtx.createDynamicsCompressor();
+        masterComp.threshold.setValueAtTime(-14, now);
+        masterComp.knee.setValueAtTime(20, now);
+        masterComp.ratio.setValueAtTime(8, now);
+        masterComp.attack.setValueAtTime(0.003, now);
+        masterComp.release.setValueAtTime(0.06, now);
+        masterComp.connect(audioCtx.destination);
+        mixBus = masterComp;
+      } catch (e) {
+        masterComp = null;
+        mixBus = null;
+      }
+    }
+    if (!mixBus) mixBus = audioCtx.destination;
+    masterToneGain.connect(mixBus);
     try { mainToneOsc.start(0); } catch (e) {}
 
     var sampleRate = audioCtx.sampleRate || 44100;
@@ -175,7 +200,7 @@ function initAudio() {
     noiseGain.gain.setValueAtTime(0, now);
     noiseNode.connect(bpf);
     bpf.connect(noiseGain);
-    noiseGain.connect(audioCtx.destination);
+    noiseGain.connect(mixBus);
     try { noiseNode.start(0); } catch (e) {}
 
     qrmOsc = audioCtx.createOscillator();
@@ -183,7 +208,7 @@ function initAudio() {
     qrmOsc.frequency.setValueAtTime(890, now);
     qrmGain.gain.setValueAtTime(0, now);
     qrmOsc.connect(qrmGain);
-    qrmGain.connect(audioCtx.destination);
+    qrmGain.connect(mixBus);
     try { qrmOsc.start(0); } catch (e) {}
 
     // Синхронизируем зеркала огибающих с фактическими стартовыми значениями,

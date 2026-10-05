@@ -138,6 +138,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:non
 .unit-toggle-opt.on{color:var(--mil-amber)}
 .speed-toggles{display:flex;align-items:center;margin-bottom:10px}
 .speed-toggles .unit-toggle{margin-bottom:0;flex:1}
+.pause-unit-row{margin:-2px 0 9px 0}
+.pause-unit-row .unit-toggle{margin-bottom:0}
 .toggle-input-btn{height:24px;margin-left:6px;background:var(--btn-base);border:1px solid var(--btn-border);color:var(--mil-dim);font-family:inherit;font-size:9px;font-weight:bold;padding:0 8px;cursor:pointer;white-space:nowrap}
 .toggle-input-btn:hover:not(:disabled){background:var(--btn-hover);border-color:var(--mil-amber);color:var(--mil-amber)}
 .toggle-input-btn.active{color:var(--mil-amber);border-color:var(--mil-amber)}
